@@ -70,6 +70,24 @@ int main(int argc, const char* argv[])
         case TOK_TRUE:
             printf("true>\n");
             break;
+        case TOK_LESS:
+            printf("LESS>\n");
+            break;
+        case TOK_LESSEQUAL:
+            printf("LESSEQUAL>\n");
+            break;
+        case TOK_EQUAL:
+            printf("EQUAL>\n");
+            break;
+        case TOK_NOTEQUAL:
+            printf("NOTEQUAL>\n");
+            break;
+        case TOK_GREATER:
+            printf("GREATER>\n");
+            break;
+        case TOK_GREATEREQUAL:
+            printf("GREATEREQUAL>\n");
+            break;
         default:
             printf("%c>\n", tok.i_value);
             break;

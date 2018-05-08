@@ -10,7 +10,15 @@ typedef enum {
     TOK_FLOAT,
     TOK_ID,
     TOK_FALSE,
-    TOK_TRUE
+    TOK_TRUE,
+
+    TOK_LESS,
+    TOK_LESSEQUAL,
+    TOK_EQUAL,
+    TOK_NOTEQUAL,
+    TOK_GREATER,
+    TOK_GREATEREQUAL
+
 } token_type_t;
 
 typedef struct {
@@ -25,7 +33,7 @@ typedef struct {
 
 typedef struct {
     int line;
-    trie_node_t* words;
+    trie_node_t* keywords;
     char* source;
     char* peek;
 } scanner_t;

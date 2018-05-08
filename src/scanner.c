@@ -7,19 +7,19 @@
 void scanner_init(scanner_t* scanner, char* source)
 {
     scanner->line = 1;
-    scanner->words = NULL;
+    scanner->keywords = NULL;
     scanner->source = source;
     scanner->peek = source;
 
-    trie_insert(&(scanner->words), "true", TOK_TRUE);
-    trie_insert(&(scanner->words), "false", TOK_FALSE);
+    trie_insert(&(scanner->keywords), "true", TOK_TRUE);
+    trie_insert(&(scanner->keywords), "false", TOK_FALSE);
 }
 
 void scanner_free(scanner_t* scanner)
 {
     scanner->line = 0;
     scanner->peek = NULL;
-    trie_free(&(scanner->words));
+    trie_free(&(scanner->keywords));
     if (scanner->source)
     {
         free(scanner->source);
@@ -38,6 +38,7 @@ void scanner_free(scanner_t* scanner)
 
 #define MATCH(chr) (PEEK() == (chr))
 #define MATCH_NEXT(chr) (PEEK_NEXT() == (chr))
+#define MATCH_TWO(a, b) (MATCH(a) && MATCH_NEXT(b))
 
 static void match_number(scanner_t* scanner, token_t* tok)
 {
@@ -80,7 +81,7 @@ static void match_word(scanner_t* scanner, token_t* tok)
     memset(word, '\0', len + 1);
     strncpy(word, start, len);
 
-    int type = trie_contains(scanner->words, word);
+    int type = trie_contains(scanner->keywords, word);
 
     if (type >= 0)
     {
@@ -90,7 +91,7 @@ static void match_word(scanner_t* scanner, token_t* tok)
         return;
     }
 
-    trie_insert(&(scanner->words), word, TOK_ID);
+    //trie_insert(&(scanner->words), word, TOK_ID);
 
     tok->type = TOK_ID;
     tok->lexeme = word;
@@ -104,17 +105,17 @@ void scanner_scan(scanner_t* scanner, token_t* tok)
             continue;
         else if (MATCH('\n'))
             scanner->line++;
-        else if (MATCH('/') && MATCH_NEXT('/'))
+        else if (MATCH_TWO('/', '/'))
         {
             while (!MATCH('\n'))
                 ADVANCE();
             BACK();
         }
-        else if (MATCH('/') && MATCH_NEXT('*'))
+        else if (MATCH_TWO('/', '*'))
         {
             ADVANCE();
             ADVANCE();
-            while (!(MATCH('*') && MATCH_NEXT('/')))
+            while (!MATCH_TWO('*', '/'))
             {
                 if (MATCH('\n'))
                     scanner->line++;
@@ -148,6 +149,44 @@ void scanner_scan(scanner_t* scanner, token_t* tok)
     else if (IS_LETTER(PEEK()))
     {
         match_word(scanner, tok);
+        return;
+    }
+    else if (MATCH('<'))
+    {
+        ADVANCE();
+        if (MATCH('='))
+        {
+            tok->type = TOK_LESSEQUAL;
+            ADVANCE();
+            return;
+        }
+        tok->type = TOK_LESS;
+        return;
+    }
+    else if (MATCH('>'))
+    {
+        ADVANCE();
+        if (MATCH('='))
+        {
+            tok->type = TOK_GREATEREQUAL;
+            ADVANCE();
+            return;
+        }
+        tok->type = TOK_GREATER;
+        return;
+    }
+    else if (MATCH_TWO('=', '='))
+    {
+        ADVANCE();
+        ADVANCE();
+        tok->type = TOK_EQUAL;
+        return;
+    }
+    else if (MATCH_TWO('!', '='))
+    {
+        ADVANCE();
+        ADVANCE();
+        tok->type = TOK_NOTEQUAL;
         return;
     }
 
