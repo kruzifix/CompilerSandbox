@@ -50,21 +50,43 @@ trie_node_t* words = NULL;
 
 void scan(token_t* tok)
 {
+#define MATCH(chr) (*peek == (chr))
+#define NEXT(chr) (*(peek + 1) == (chr))
     for (; *peek; ++peek)
     {
-        if (*peek == ' ' || *peek == '\t')
+        if (MATCH(' ') || MATCH('\t'))
             continue;
-        else if (*peek == '\n')
+        else if (MATCH('\n'))
             line++;
-        else if (*peek == '/' && *(peek + 1) == '/')
+        else if (MATCH('/') && NEXT('/'))
         {
-            while (*peek && *peek != '\n')
+            while (!MATCH('\n'))
                 ++peek;
             --peek;
+        }
+        else if (MATCH('/') && NEXT('*'))
+        {
+            ++peek;
+            ++peek;
+            while (!(MATCH('*') && NEXT('/')))
+            {
+                if (MATCH('\n'))
+                    line++;
+                ++peek;
+                if (!*peek)
+                {
+                    tok->line = line;
+                    tok->type = TOK_EOF;
+                    return;
+                }
+            }
+            ++peek;
         }
         else
             break;
     }
+#undef MATCH
+#undef NEXT
 
     tok->line = line;
 
