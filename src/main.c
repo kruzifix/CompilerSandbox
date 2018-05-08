@@ -52,14 +52,17 @@ int main(int argc, const char* argv[])
             free(tok.lexeme);
             tok.lexeme = NULL;
             break;
-        case TOK_NUM:
-            printf("NUM, %i>\n", tok.value);
+        case TOK_INT:
+            printf("INT, %i>\n", tok.i_value);
+            break;
+        case TOK_FLOAT:
+            printf("FLOAT, %f>\n", tok.f_value);
             break;
         case TOK_EOF:
             printf("EOF>\n");
             break;
         case TOK_OP:
-            printf("OP, %c>\n", tok.value);
+            printf("OP, %c>\n", tok.i_value);
             break;
         case TOK_FALSE:
             printf("false>\n");
@@ -68,7 +71,7 @@ int main(int argc, const char* argv[])
             printf("true>\n");
             break;
         default:
-            printf("%c>\n", tok.value);
+            printf("%c>\n", tok.i_value);
             break;
         }
     } while (tok.type != TOK_EOF);

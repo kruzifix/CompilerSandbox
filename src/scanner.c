@@ -1,4 +1,6 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdlib.h>
+#include <string.h>
 
 #include "scanner.h"
 
@@ -45,8 +47,25 @@ static void match_number(scanner_t* scanner, token_t* tok)
         ADVANCE();
     } while (IS_DIGIT(PEEK()));
 
-    tok->type = TOK_NUM;
-    tok->value = v;
+    if (MATCH('.'))
+    {
+        float f = (float)v;
+        int order = 10;
+        ADVANCE();
+        while (IS_DIGIT(PEEK()))
+        {
+            f += ((PEEK() - '0') / (float)order);
+            order *= 10;
+            ADVANCE();
+        }
+
+        tok->type = TOK_FLOAT;
+        tok->f_value = f;
+        return;
+    }
+
+    tok->type = TOK_INT;
+    tok->i_value = v;
 }
 
 static void match_word(scanner_t* scanner, token_t* tok)
@@ -133,7 +152,7 @@ void scanner_scan(scanner_t* scanner, token_t* tok)
     }
 
     tok->type = TOK_OP;
-    tok->value = PEEK();
+    tok->i_value = PEEK();
     ADVANCE();
 }
 
@@ -141,9 +160,7 @@ void scanner_scan(scanner_t* scanner, token_t* tok)
 #undef IS_LETTER
 #undef PEEK
 #undef PEEK_NEXT
-
 #undef BACK
 #undef ADVANCE
-
 #undef MATCH
 #undef MATCH_NEXT

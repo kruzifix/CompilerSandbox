@@ -6,7 +6,8 @@
 typedef enum {
     TOK_EOF,
     TOK_OP,
-    TOK_NUM,
+    TOK_INT,
+    TOK_FLOAT,
     TOK_ID,
     TOK_FALSE,
     TOK_TRUE
@@ -16,7 +17,8 @@ typedef struct {
     token_type_t type;
     int line;
     union {
-        int value;
+        int i_value;
+        float f_value;
         char* lexeme;
     };
 } token_t;
