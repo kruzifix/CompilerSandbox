@@ -73,7 +73,7 @@ void scan(token_t* tok)
                 if (MATCH('\n'))
                     line++;
                 ++peek;
-                if (!*peek)
+                if (MATCH('\0'))
                 {
                     tok->line = line;
                     tok->type = TOK_EOF;
