@@ -135,9 +135,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\src\main.c" />
+    <ClCompile Include="..\src\scanner.c" />
     <ClCompile Include="..\src\trie.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\scanner.h" />
     <ClInclude Include="..\src\trie.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

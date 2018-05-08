@@ -1,5 +1,5 @@
-#ifndef clox_trie_h
-#define clox_trie_h
+#ifndef _trie_h
+#define _trie_h
 
 typedef struct _trie_node_t trie_node_t;
 
