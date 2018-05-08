@@ -138,18 +138,14 @@ void scanner_scan(scanner_t* scanner, token_t* tok)
     if (MATCH('\0'))
     {
         tok->type = TOK_EOF;
-        return;
     }
-
-    if (IS_DIGIT(PEEK()))
+    else if (IS_DIGIT(PEEK()))
     {
         match_number(scanner, tok);
-        return;
     }
     else if (IS_LETTER(PEEK()))
     {
         match_word(scanner, tok);
-        return;
     }
     else if (MATCH('<'))
     {
@@ -161,7 +157,6 @@ void scanner_scan(scanner_t* scanner, token_t* tok)
             return;
         }
         tok->type = TOK_LESS;
-        return;
     }
     else if (MATCH('>'))
     {
@@ -173,26 +168,25 @@ void scanner_scan(scanner_t* scanner, token_t* tok)
             return;
         }
         tok->type = TOK_GREATER;
-        return;
     }
     else if (MATCH_TWO('=', '='))
     {
         ADVANCE();
         ADVANCE();
         tok->type = TOK_EQUAL;
-        return;
     }
     else if (MATCH_TWO('!', '='))
     {
         ADVANCE();
         ADVANCE();
         tok->type = TOK_NOTEQUAL;
-        return;
     }
-
-    tok->type = TOK_OP;
-    tok->i_value = PEEK();
-    ADVANCE();
+    else
+    {
+        tok->type = TOK_OP;
+        tok->i_value = PEEK();
+        ADVANCE();
+    }
 }
 
 #undef IS_DIGIT
