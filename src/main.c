@@ -16,6 +16,7 @@ typedef enum {
 
 typedef struct {
     token_type_t type;
+    int line;
     union {
         int value;
         char* lexeme;
@@ -51,13 +52,21 @@ void scan(token_t* tok)
 {
     for (; *peek; ++peek)
     {
-        if (*peek == ' ' || *peek == '\t' || *peek == '\r')
+        if (*peek == ' ' || *peek == '\t')
             continue;
         else if (*peek == '\n')
             line++;
+        else if (*peek == '/' && *(peek + 1) == '/')
+        {
+            while (*peek && *peek != '\n')
+                ++peek;
+            --peek;
+        }
         else
             break;
     }
+
+    tok->line = line;
 
     if (!*peek)
     {
@@ -130,30 +139,31 @@ int main(int argc, const char* argv[])
     token_t tok;
     do {
         scan(&tok);
+        printf("<%i: ", tok.line);
         switch (tok.type)
         {
         case TOK_ID:
-            printf("<ID, %s>\n", tok.lexeme);
+            printf("ID, %s>\n", tok.lexeme);
             free(tok.lexeme);
             tok.lexeme = NULL;
             break;
         case TOK_NUM:
-            printf("<NUM, %i>\n", tok.value);
+            printf("NUM, %i>\n", tok.value);
             break;
         case TOK_EOF:
-            printf("<EOF>\n");
+            printf("EOF>\n");
             break;
         case TOK_OP:
-            printf("<OP, %c>\n", tok.value);
+            printf("OP, %c>\n", tok.value);
             break;
         case TOK_FALSE:
-            printf("<false>\n");
+            printf("false>\n");
             break;
         case TOK_TRUE:
-            printf("<true>\n");
+            printf("true>\n");
             break;
         default:
-            printf("<%c>\n", tok.value);
+            printf("%c>\n", tok.value);
             break;
         }
     } while (tok.type != TOK_EOF);
