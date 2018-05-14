@@ -3,7 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "config.h"
 #include "scanner.h"
+
+#include "vld.h"
+
+stack_allocator_t* global_stack_alloc = NULL;
 
 char* read_file(const char* filename)
 {
@@ -13,12 +18,13 @@ char* read_file(const char* filename)
     fseek(f, 0, SEEK_END);
     long length = ftell(f);
     fseek(f, 0, SEEK_SET);
-    char* buffer = malloc(length + 1);
-    if (buffer)
+    char* buffer = _MALLOC(length + 1);
+    if (!buffer)
     {
-        memset(buffer, '\0', length + 1);
-        fread(buffer, 1, length, f);
+        EXIT("unable to alloc file buffer");
     }
+    //memset(buffer, '\0', length + 1);
+    fread(buffer, 1, length, f);
     fclose(f);
     return buffer;
 }
@@ -31,26 +37,31 @@ int main(int argc, const char* argv[])
         return 1;
     }
 
+    global_stack_alloc = sa_new(1024);
+
     char* content = read_file(argv[1]);
     if (!content)
     {
         printf("empty file\n");
+
+        sa_free(&global_stack_alloc);
         return 1;
     }
 
-    scanner_t scanner;
-    scanner_init(&scanner, content);
+    scanner_t* scanner = scanner_new(content);
+    if (!scanner)
+    {
+        EXIT("unable to create scanner\n");
+    }
 
     token_t tok;
     do {
-        scanner_scan(&scanner, &tok);
+        scanner_scan(scanner, &tok);
         printf("<%i: ", tok.line);
         switch (tok.type)
         {
         case TOK_ID:
             printf("ID, %s>\n", tok.lexeme);
-            free(tok.lexeme);
-            tok.lexeme = NULL;
             break;
         case TOK_INT:
             printf("INT, %i>\n", tok.i_value);
@@ -94,7 +105,18 @@ int main(int argc, const char* argv[])
         }
     } while (tok.type != TOK_EOF);
 
-    scanner_free(&scanner);
+    //scanner_free(&scanner);
+
+    sa_print_stats(global_stack_alloc);
+    sa_free(&global_stack_alloc);
 
     return 0;
+}
+
+void panic_exit(const char* message, char* file, int line)
+{
+    printf("panic exit in file '%s' line %i:\n%s\n", file, line, message);
+    sa_print_stats(global_stack_alloc);
+    sa_free(&global_stack_alloc);
+    exit(1);
 }

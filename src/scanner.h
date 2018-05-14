@@ -1,6 +1,7 @@
 #ifndef _scanner_h
 #define _scanner_h
 
+#include "config.h"
 #include "trie.h"
 
 typedef enum {
@@ -38,8 +39,8 @@ typedef struct {
     char* peek;
 } scanner_t;
 
-void scanner_init(scanner_t* scanner, char* source);
-void scanner_free(scanner_t* scanner);
+scanner_t* scanner_new(char* source);
+//void scanner_free(scanner_t* scanner);
 
 void scanner_scan(scanner_t* scanner, token_t* tok);
 

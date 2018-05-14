@@ -10,9 +10,11 @@ void trie_insert(trie_node_t** root, const char* string, int value)
     trie_node_t* node = *root;
     if (!node)
     {
-        node = malloc(sizeof(trie_node_t));
+        node = _MALLOC(sizeof(trie_node_t));
         if (!node)
-            return;
+        {
+            EXIT("unable to alloc trie node");
+        }
         node->symbol = *string;
         node->child = NULL;
         node->next = NULL;
@@ -58,7 +60,7 @@ int trie_contains(const trie_node_t* root, const char* string)
 
     return last ? last->value : -1;
 }
-
+/*
 void trie_free(trie_node_t** root)
 {
     trie_node_t* node = *root;
@@ -70,3 +72,4 @@ void trie_free(trie_node_t** root)
     free(node);
     *root = NULL;
 }
+*/

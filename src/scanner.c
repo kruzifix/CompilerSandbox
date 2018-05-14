@@ -4,17 +4,24 @@
 
 #include "scanner.h"
 
-void scanner_init(scanner_t* scanner, char* source)
+scanner_t* scanner_new(char* source)
 {
-    scanner->line = 1;
-    scanner->keywords = NULL;
-    scanner->source = source;
-    scanner->peek = source;
+    scanner_t* scan = _MALLOC(sizeof(scanner_t));
+    if (!scan)
+        return NULL;
 
-    trie_insert(&(scanner->keywords), "true", TOK_TRUE);
-    trie_insert(&(scanner->keywords), "false", TOK_FALSE);
+    scan->line = 1;
+    scan->keywords = NULL;
+    scan->source = source;
+    scan->peek = source;
+
+    trie_insert(&(scan->keywords), "true", TOK_TRUE);
+    trie_insert(&(scan->keywords), "false", TOK_FALSE);
+
+    return scan;
 }
 
+/*
 void scanner_free(scanner_t* scanner)
 {
     scanner->line = 0;
@@ -26,6 +33,7 @@ void scanner_free(scanner_t* scanner)
         scanner->source = NULL;
     }
 }
+*/
 
 #define IS_DIGIT(c) ((c) >= '0' && (c) <= '9')
 #define IS_LETTER(c) (((c) >= 'a' && (c) <= 'z') || ((c) >= 'A' && (c) >= 'Z'))
@@ -77,16 +85,22 @@ static void match_word(scanner_t* scanner, token_t* tok)
     } while (IS_LETTER(PEEK()) || IS_DIGIT(PEEK()));
 
     size_t len = (scanner->peek - start);
-    char* word = malloc(len + 1);
-    memset(word, '\0', len + 1);
+    char* word = _MALLOC(len + 1);
+
+    if (!word)
+    {
+        EXIT("unable to alloc word");
+    }
+
+    //memset(word, '\0', len + 1);
     strncpy(word, start, len);
 
     int type = trie_contains(scanner->keywords, word);
 
     if (type >= 0)
     {
-        free(word);
-        word = NULL;
+        //free(word);
+        //word = NULL;
         tok->type = type;
         return;
     }
