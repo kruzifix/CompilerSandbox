@@ -5,6 +5,7 @@
 
 #include "config.h"
 #include "scanner.h"
+#include "hashtable.h"
 
 #include "vld.h"
 
@@ -31,6 +32,14 @@ char* read_file(const char* filename)
 
 int main(int argc, const char* argv[])
 {
+#if 1
+    hashtable_t* ht = ht_new(4);
+
+    ht_put(ht, "david", _strdup("david"));
+
+    ht_free(&ht);
+    return 0;
+#else
     if (argc != 2)
     {
         printf("expected file path\n");
@@ -111,7 +120,9 @@ int main(int argc, const char* argv[])
     sa_free(&global_stack_alloc);
 
     return 0;
+#endif
 }
+
 
 void panic_exit(const char* message, char* file, int line)
 {

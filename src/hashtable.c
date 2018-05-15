@@ -5,6 +5,8 @@
 
 typedef unsigned long hashentry_key_t;
 
+// hashentry holds data as void*
+// this memory gets freed, when the hashentry is freed
 struct hashentry_t {
     hashentry_key_t key;
     void* data;
@@ -20,17 +22,6 @@ static hashentry_t* he_new(hashentry_key_t key, void* data, hashentry_t* next)
     he->data = data;
     he->next = next;
     return he;
-}
-
-static void he_free(hashentry_t** he)
-{
-    if (!*he)
-        return;
-    // remove recursion -> outside code needs to iterate?
-    he_free(&(*he)->next);
-    free((*he)->data);
-    free(*he);
-    *he = NULL;
 }
 
 static hashentry_key_t hash_djb2(char* str)
@@ -52,7 +43,7 @@ hashtable_t* ht_new(size_t capacity)
 
     ht->capacity = capacity;
     ht->count = 0;
-    ht->entries = malloc(sizeof(hashentry_t*) * capacity);
+    ht->entries = calloc(capacity, sizeof(hashentry_t*));
     if (!ht->entries)
     {
         free(ht);
@@ -69,8 +60,19 @@ void ht_free(hashtable_t** ht)
         return;
     for (size_t i = 0; i < h->capacity; ++i)
     {
-        he_free(&(h->entries[i]));
+        hashentry_t* entry = h->entries[i];
+        while (entry)
+        {
+            hashentry_t* next = entry->next;
+
+            if (entry->data)
+                free(entry->data);
+            free(entry);
+
+            entry = next;
+        }
     }
+    free(h->entries);
     free(h);
     *ht = NULL;
 }
@@ -85,6 +87,8 @@ void ht_put(hashtable_t* ht, char* key, void* value)
     size_t idx = hash % ht->capacity;
     // get linked list of entries
     hashentry_t* first = ht->entries[idx];
+
+    printf("adding entry with key %s  ->  %i\nmapping to slot %i\n", key, hash, idx);
 
     if (first == NULL)
     {
@@ -102,6 +106,7 @@ void ht_put(hashtable_t* ht, char* key, void* value)
             if (node->key == hash)
             {
                 // replace data
+                printf("collision! replace data!\n");
                 node->data = value;
                 return;
             }
@@ -109,6 +114,7 @@ void ht_put(hashtable_t* ht, char* key, void* value)
         }
         // no entry with same key found
         // insert at beginning of list
+        printf("collision! insert new entry!\n");
         ht->entries[idx] = he_new(hash, value, ht->entries[idx]);
     }
 }
