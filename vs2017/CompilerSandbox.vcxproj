@@ -134,6 +134,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\hashtable.c" />
     <ClCompile Include="..\src\main.c" />
     <ClCompile Include="..\src\scanner.c" />
     <ClCompile Include="..\src\stack_allocator.c" />
@@ -141,6 +142,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\config.h" />
+    <ClInclude Include="..\src\hashtable.h" />
     <ClInclude Include="..\src\scanner.h" />
     <ClInclude Include="..\src\stack_allocator.h" />
     <ClInclude Include="..\src\trie.h" />
