@@ -36,6 +36,25 @@ int main(int argc, const char* argv[])
     hashtable_t* ht = ht_new(4);
 
     ht_put(ht, "david", _strdup("david"));
+    ht_put(ht, "bavid", _strdup("bavid"));
+    ht_put(ht, "david2", _strdup("david2"));
+    ht_put(ht, "david3", _strdup("david3"));
+
+    int* i = malloc(sizeof(int));
+    *i = 15;
+
+    ht_put(ht, "int", i);
+
+    printf("david: %s\n", (char*)ht_get(ht, "david"));
+    printf("bavid: %s\n", (char*)ht_get(ht, "bavid"));
+    printf("david2: %s\n", (char*)ht_get(ht, "david2"));
+    printf("david3: %s\n", (char*)ht_get(ht, "david3"));
+
+    int* ii = ht_get(ht, "int");
+
+    printf("int: %i\n", *ii);
+
+    printf("test: %s\n", (char*)ht_get(ht, "test"));
 
     ht_free(&ht);
     return 0;

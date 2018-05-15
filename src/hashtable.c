@@ -107,6 +107,8 @@ void ht_put(hashtable_t* ht, char* key, void* value)
             {
                 // replace data
                 printf("collision! replace data!\n");
+                if (node->data)
+                    free(node->data);
                 node->data = value;
                 return;
             }
@@ -121,5 +123,24 @@ void ht_put(hashtable_t* ht, char* key, void* value)
 
 void* ht_get(hashtable_t* ht, char* key)
 {
+    if (!ht)
+        return;
+    hashentry_key_t hash = hash_djb2(key);
+
+    size_t idx = hash % ht->capacity;
+    hashentry_t* first = ht->entries[idx];
+
+    if (first)
+    {
+        hashentry_t* entry = first;
+        while (entry)
+        {
+            if (entry->key == hash)
+            {
+                return entry->data;
+            }
+            entry = entry->next;
+        }
+    }
     return NULL;
 }
