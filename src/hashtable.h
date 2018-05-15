@@ -1,9 +1,12 @@
 #ifndef _hashtable_h
 #define _hashtable_h
 
+typedef unsigned long hashentry_key_t;
+
 typedef struct {
-    struct hashentry_t* next;
+    hashentry_key_t key;
     void* data;
+    struct hashentry_t* next;
 } hashentry_t;
 
 typedef struct {
