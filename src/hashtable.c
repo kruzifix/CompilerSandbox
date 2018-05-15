@@ -87,16 +87,8 @@ void ht_put(hashtable_t* ht, char* key, void* value)
     size_t idx = hash % ht->capacity;
     // get linked list of entries
     hashentry_t* first = ht->entries[idx];
-
-    printf("adding entry with key %s  ->  %i\nmapping to slot %i\n", key, hash, idx);
-
-    if (first == NULL)
-    {
-        // no entry with this key yet
-        ht->entries[idx] = he_new(hash, value, NULL);
-        ht->count++;
-    }
-    else
+    
+    if (first)
     {
         // collision!
         // see if key is already in hashtable
@@ -106,7 +98,6 @@ void ht_put(hashtable_t* ht, char* key, void* value)
             if (node->key == hash)
             {
                 // replace data
-                printf("collision! replace data!\n");
                 if (node->data)
                     free(node->data);
                 node->data = value;
@@ -116,8 +107,14 @@ void ht_put(hashtable_t* ht, char* key, void* value)
         }
         // no entry with same key found
         // insert at beginning of list
-        printf("collision! insert new entry!\n");
         ht->entries[idx] = he_new(hash, value, ht->entries[idx]);
+        ht->count++;
+    }
+    else
+    {
+        // no entry with this key yet
+        ht->entries[idx] = he_new(hash, value, NULL);
+        ht->count++;
     }
 }
 
