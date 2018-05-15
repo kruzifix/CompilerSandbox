@@ -33,9 +33,9 @@ static void he_free(hashentry_t** he)
     *he = NULL;
 }
 
-static hashentry_key_t djb2_hash(char* str)
+static hashentry_key_t hash_djb2(char* str)
 {
-    unsigned long hash = 5381;
+    hashentry_key_t hash = 5381;
     int c;
 
     while (c = *str++)
@@ -73,4 +73,47 @@ void ht_free(hashtable_t** ht)
     }
     free(h);
     *ht = NULL;
+}
+
+void ht_put(hashtable_t* ht, char* key, void* value)
+{
+    if (!ht)
+        return;
+    hashentry_key_t hash = hash_djb2(key);
+
+    // calc index
+    size_t idx = hash % ht->capacity;
+    // get linked list of entries
+    hashentry_t* first = ht->entries[idx];
+
+    if (first == NULL)
+    {
+        // no entry with this key yet
+        ht->entries[idx] = he_new(hash, value, NULL);
+        ht->count++;
+    }
+    else
+    {
+        // collision!
+        // see if key is already in hashtable
+        hashentry_t* node = first;
+        while (node)
+        {
+            if (node->key == hash)
+            {
+                // replace data
+                node->data = value;
+                return;
+            }
+            node = node->next;
+        }
+        // no entry with same key found
+        // insert at beginning of list
+        ht->entries[idx] = he_new(hash, value, ht->entries[idx]);
+    }
+}
+
+void* ht_get(hashtable_t* ht, char* key)
+{
+    return NULL;
 }
