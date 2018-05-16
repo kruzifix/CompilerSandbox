@@ -1,7 +1,18 @@
 #ifndef _hashtable_h
 #define _hashtable_h
 
+typedef unsigned long hashentry_key_t;
+
 typedef struct hashentry_t hashentry_t;
+
+struct hashentry_t {
+    hashentry_key_t key; // 4 byte
+    // frees data ptr if != 0
+    char free_data; // 1 byte
+    char _pad[3]; // 3 byte
+    void* data; // 8 byte
+    hashentry_t* next; // 8 byte
+};
 
 typedef struct {
     size_t num_slots; // 8 byte

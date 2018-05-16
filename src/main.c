@@ -147,12 +147,25 @@ int main(int argc, const char* argv[])
 
         if (strcmp(input, "count") == 0)
         {
-            printf("count: %i\n", ht->count);
+            printf("count: %zu\n", ht->count);
         }
 
         if (strcmp(input, "clear") == 0)
         {
             ht_clear(ht);
+        }
+
+        if (strcmp(input, "list") == 0)
+        {
+            for (size_t i = 0; i < ht->num_slots; i++)
+            {
+                hashentry_t* entry = ht->slots[i];
+                while (entry)
+                {
+                    printf("'%u'[%i]: '%s'\n", entry->key, entry->free_data, (char*)entry->data);
+                    entry = entry->next;
+                }
+            }
         }
     }
 
