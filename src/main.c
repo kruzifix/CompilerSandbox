@@ -34,8 +34,8 @@ int main(int argc, const char* argv[])
 {
 #if 1
 
-    hashtable_t* ht = ht_new(4);
-    
+    hashtable_t* ht = ht_new(16);
+
     ht_put(ht, "david", "david");
     ht_put(ht, "bavid", "bavid");
     ht_put(ht, "david2", "david2");
@@ -79,8 +79,26 @@ int main(int argc, const char* argv[])
 
     free(i);
 
+    char buffer[100];
+
+    while (1)
+    {
+        printf("> ");
+        char* input = fgets(buffer, 100, stdin);
+        if (!input)
+        {
+            printf("error reading input!\n");
+            break;
+        }
+
+        if (strncmp(input, "exit", 4) == 0)
+        {
+            break;
+        }
+    }
+
     ht_free(&ht);
-    return 0;
+    return EXIT_SUCCESS;
 #else
     if (argc != 2)
     {
