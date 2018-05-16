@@ -91,9 +91,48 @@ int main(int argc, const char* argv[])
             break;
         }
 
-        if (strncmp(input, "exit", 4) == 0)
-        {
+        // remove trailing \n
+        input[strlen(input) - 1] = '\0';
+
+        if (strncmp(input, "exit", 5) == 0)
             break;
+
+        if (strncmp(input, "get ", 4) == 0)
+        {
+            char* key = (input + 4);
+            if (!*key)
+            {
+                printf("expected key!\n");
+                continue;
+            }
+
+            char* value = NULL;
+            if (ht_get(ht, key, &value))
+                printf("'%s': %s\n", key, value);
+            else
+                printf("'%s' not in ht.\n", key);
+        }
+
+        if (strncmp(input, "put ", 4) == 0)
+        {
+            char* key = (input + 4);
+            if (!*key)
+            {
+                printf("expected key!\n");
+                continue;
+            }
+            char* value = key;
+            while (*value && *value != ' ')
+                value++;
+            if (!*value)
+            {
+                printf("expected value!\n");
+                continue;
+            }
+            *value = '\0';
+            value++;
+
+            ht_put(ht, key, _strdup(value));
         }
     }
 
