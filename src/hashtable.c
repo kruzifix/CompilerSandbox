@@ -7,20 +7,32 @@ typedef unsigned long hashentry_key_t;
 
 struct hashentry_t {
     hashentry_key_t key; // 4 byte
-    char _pad[4]; // 4 byte
+    // frees data ptr if != 0
+    char free_data; // 1 byte
+    char _pad[3]; // 3 byte
     void* data; // 8 byte
     struct hashentry_t* next; // 8 byte
 };
 
-static hashentry_t* he_new(hashentry_key_t key, void* data, hashentry_t* next)
+static hashentry_t* he_new(hashentry_key_t key, char free_data, void* data, hashentry_t* next)
 {
     hashentry_t* he = malloc(sizeof(hashentry_t));
     if (!he)
         return NULL;
     he->key = key;
+    he->free_data = free_data;
     he->data = data;
     he->next = next;
     return he;
+}
+
+static void he_free(hashentry_t* he)
+{
+    if (!he)
+        return;
+    if (he->free_data && he->data)
+        free(he->data);
+    free(he);
 }
 
 static hashentry_key_t hash_djb2(char* str)
@@ -36,11 +48,13 @@ static hashentry_key_t hash_djb2(char* str)
 
 hashtable_t* ht_new(size_t num_slots)
 {
-    printf("entry: %i\n", sizeof(hashentry_t));
-    printf("  key: %i\n", sizeof(hashentry_key_t));
-    printf("  _pad: %i\n", sizeof(char[4]));
-    printf("  data: %i\n", sizeof(void*));
-    printf("  next: %i\n\n", sizeof(hashentry_t*));
+    hashentry_t t;
+    printf("entry: %i\n", sizeof(t));
+    printf("  key: %i\n", sizeof(t.key));
+    printf("  free_data: %i\n", sizeof(t.free_data));
+    printf("  _pad: %i\n", sizeof(t._pad));
+    printf("  data: %i\n", sizeof(t.data));
+    printf("  next: %i\n\n", sizeof(t.next));
 
     printf("table: %i\n", sizeof(hashtable_t));
     printf("  capacity: %i\n", sizeof(size_t));
@@ -75,9 +89,7 @@ void ht_free(hashtable_t** ht)
         {
             hashentry_t* next = entry->next;
 
-            //if (entry->data)
-            //    free(entry->data);
-            free(entry);
+            he_free(entry);
 
             entry = next;
         }
@@ -87,7 +99,7 @@ void ht_free(hashtable_t** ht)
     *ht = NULL;
 }
 
-void ht_put(hashtable_t* ht, char* key, void* value)
+void ht_put(hashtable_t* ht, char* key, void* value, char free_data)
 {
     if (!ht)
         return;
@@ -108,24 +120,24 @@ void ht_put(hashtable_t* ht, char* key, void* value)
             if (node->key == hash)
             {
                 // replace data
-
-                //if (node->data)
-                //    free(node->data);
+                if (node->free_data && node->data)
+                    free(node->data);
 
                 node->data = value;
+                node->free_data = free_data;
                 return;
             }
             node = node->next;
         }
         // no entry with same key found
         // insert at beginning of list
-        ht->slots[idx] = he_new(hash, value, ht->slots[idx]);
+        ht->slots[idx] = he_new(hash, free_data, value, ht->slots[idx]);
         ht->count++;
     }
     else
     {
         // no entry with this key yet
-        ht->slots[idx] = he_new(hash, value, NULL);
+        ht->slots[idx] = he_new(hash, free_data, value, NULL);
         ht->count++;
     }
 }
@@ -171,7 +183,7 @@ void ht_remove(hashtable_t* ht, char* key)
         {
             ht->slots[idx] = first->next;
 
-            free(first);
+            he_free(first);
             return;
         }
 
@@ -182,8 +194,7 @@ void ht_remove(hashtable_t* ht, char* key)
             if (entry->key == hash)
             {
                 first->next = entry->next;
-
-                free(entry);
+                he_free(entry);
                 return;
             }
 

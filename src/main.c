@@ -36,10 +36,10 @@ int main(int argc, const char* argv[])
 
     hashtable_t* ht = ht_new(16);
 
-    ht_put(ht, "david", "david");
-    ht_put(ht, "bavid", "bavid");
-    ht_put(ht, "david2", "david2");
-    ht_put(ht, "david3", "david3");
+    ht_put(ht, "david", "david", 0);
+    ht_put(ht, "bavid", "bavid", 0);
+    ht_put(ht, "david2", "david2", 0);
+    ht_put(ht, "david3", "david3", 0);
 
     char* str = NULL;
     if (ht_get(ht, "david", &str))
@@ -54,7 +54,7 @@ int main(int argc, const char* argv[])
     int* i = malloc(sizeof(int));
     *i = 15;
 
-    ht_put(ht, "int", i);
+    ht_put(ht, "int", i, 1);
 
     int* ii = NULL;
     if (ht_get(ht, "int", &ii))
@@ -77,10 +77,7 @@ int main(int argc, const char* argv[])
         printf("int not in ht\n");
     }
 
-    free(i);
-
     char buffer[100];
-
     while (1)
     {
         printf("> ");
@@ -132,7 +129,7 @@ int main(int argc, const char* argv[])
             *value = '\0';
             value++;
 
-            ht_put(ht, key, _strdup(value));
+            ht_put(ht, key, _strdup(value), 1);
         }
     }
 
