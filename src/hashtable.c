@@ -69,21 +69,31 @@ void ht_free(hashtable_t** ht)
     hashtable_t* h = *ht;
     if (!h)
         return;
-    for (size_t i = 0; i < h->num_slots; ++i)
-    {
-        hashentry_t* entry = h->slots[i];
-        while (entry)
-        {
-            hashentry_t* next = entry->next;
+    
+    ht_clear(h);
 
-            he_free(entry);
-
-            entry = next;
-        }
-    }
     free(h->slots);
     free(h);
     *ht = NULL;
+}
+
+void ht_clear(hashtable_t* ht)
+{
+    if (!ht)
+        return;
+
+    for (size_t i = 0; i < ht->num_slots; ++i)
+    {
+        hashentry_t* entry = ht->slots[i];
+        while (entry)
+        {
+            hashentry_t* next = entry->next;
+            he_free(entry);
+            entry = next;
+        }
+        ht->slots[i] = NULL;
+    }
+    ht->count = 0;
 }
 
 void ht_put(hashtable_t* ht, char* key, void* value, char free_data)

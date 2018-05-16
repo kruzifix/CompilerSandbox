@@ -149,6 +149,11 @@ int main(int argc, const char* argv[])
         {
             printf("count: %i\n", ht->count);
         }
+
+        if (strcmp(input, "clear") == 0)
+        {
+            ht_clear(ht);
+        }
     }
 
     ht_free(&ht);
