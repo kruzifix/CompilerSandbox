@@ -34,4 +34,6 @@ void ht_put(hashtable_t* ht, char* key, void* value, char free_data);
 int ht_get(hashtable_t* ht, char* key, void** value);
 void ht_remove(hashtable_t* ht, char* key);
 
+void ht_repl(hashtable_t* ht);
+
 #endif

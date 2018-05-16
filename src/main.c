@@ -8,7 +8,7 @@
 
 #include "hashtable.h"
 
-#include "vld.h"
+#include <vld.h>
 
 stack_allocator_t* global_stack_alloc = NULL;
 
@@ -90,101 +90,7 @@ int main(int argc, const char* argv[])
         printf("int not in ht\n");
     }
 
-    char buffer[100];
-    while (1)
-    {
-        printf("> ");
-        char* input = fgets(buffer, 100, stdin);
-        if (!input)
-        {
-            printf("error reading input!\n");
-            break;
-        }
-
-        // remove trailing \n
-        input[strlen(input) - 1] = '\0';
-
-        if (strncmp(input, "exit", 5) == 0)
-            break;
-
-        if (strncmp(input, "get ", 4) == 0)
-        {
-            char* key = (input + 4);
-            if (!*key)
-            {
-                printf("expected key!\n");
-                continue;
-            }
-
-            char* value = NULL;
-            if (ht_get(ht, key, &value))
-                printf("'%s': %s\n", key, value);
-            else
-                printf("'%s' not in ht.\n", key);
-        }
-
-        if (strncmp(input, "put ", 4) == 0)
-        {
-            char* key = (input + 4);
-            if (!*key)
-            {
-                printf("expected key!\n");
-                continue;
-            }
-            char* value = key;
-            while (*value && *value != ' ')
-                value++;
-
-            if (!*value)
-            {
-                printf("expected value!\n");
-                continue;
-            }
-            *value = '\0';
-            value++;
-
-            ht_put(ht, key, _strdup(value), 1);
-        }
-
-        if (strncmp(input, "remove ", 7) == 0)
-        {
-            char* key = (input + 7);
-            if (!*key)
-            {
-                printf("expected key!\n");
-                continue;
-            }
-
-            ht_remove(ht, key);
-        }
-
-        if (strcmp(input, "count") == 0)
-        {
-            printf("count: %zu\n", ht->count);
-        }
-
-        if (strcmp(input, "clear") == 0)
-        {
-            ht_clear(ht);
-        }
-
-        if (strcmp(input, "list") == 0)
-        {
-            for (size_t i = 0; i < ht->num_slots; i++)
-            {
-                hashentry_t* entry = ht->slots[i];
-                while (entry)
-                {
-#ifdef HASHTABLE_INCLUDE_KEY_IN_ENTRY
-                    printf("'%s'[%u]%s: '%s'\n", entry->key_value, entry->key, entry->free_data ? " free" : "", (char*)entry->data);
-#else
-                    printf("'%s'%s: '%s'\n", entry->key, entry->free_data ? " free" : "", (char*)entry->data);
-#endif
-                    entry = entry->next;
-                }
-            }
-        }
-    }
+    ht_repl(ht);
 
     ht_free(&ht);
     return EXIT_SUCCESS;
