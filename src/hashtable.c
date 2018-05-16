@@ -130,10 +130,11 @@ void ht_put(hashtable_t* ht, char* key, void* value)
     }
 }
 
-void* ht_get(hashtable_t* ht, char* key)
+// if key in ht => return 1, write data in value, else: return 0
+int ht_get(hashtable_t* ht, char* key, void** value)
 {
     if (!ht)
-        return NULL;
+        return 0;
     hashentry_key_t hash = hash_djb2(key);
 
     size_t idx = hash % ht->capacity;
@@ -146,12 +147,13 @@ void* ht_get(hashtable_t* ht, char* key)
         {
             if (entry->key == hash)
             {
-                return entry->data;
+                *value = entry->data;
+                return 1;
             }
             entry = entry->next;
         }
     }
-    return NULL;
+    return 0;
 }
 
 void ht_remove(hashtable_t* ht, char* key)

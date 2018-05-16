@@ -35,38 +35,48 @@ int main(int argc, const char* argv[])
 #if 1
 
     hashtable_t* ht = ht_new(4);
-
-    char* dav = _strdup("david");
-    char* bav = _strdup("bavid");
-    char* dav2 = _strdup("david2");
-    char* dav3 = _strdup("david3");
-
+    
     ht_put(ht, "david", "david");
-    ht_put(ht, "bavid", bav);
-    ht_put(ht, "david2", dav2);
-    ht_put(ht, "david3", dav3);
+    ht_put(ht, "bavid", "bavid");
+    ht_put(ht, "david2", "david2");
+    ht_put(ht, "david3", "david3");
+
+    char* str = NULL;
+    if (ht_get(ht, "david", &str))
+    {
+        printf("got david: %s\n", str);
+    }
+    else
+    {
+        printf("david not in ht\n");
+    }
 
     int* i = malloc(sizeof(int));
     *i = 15;
 
     ht_put(ht, "int", i);
 
-    printf("david: %s\n", (char*)ht_get(ht, "david"));
-    printf("bavid: %s\n", (char*)ht_get(ht, "bavid"));
-    printf("david2: %s\n", (char*)ht_get(ht, "david2"));
-    printf("david3: %s\n", (char*)ht_get(ht, "david3"));
-
     int* ii = NULL;
-    ii = ht_get(ht, "int");
+    if (ht_get(ht, "int", &ii))
+    {
+        printf("int: %i\n", *ii);
+    }
+    else
+    {
+        printf("int not in ht\n");
+    }
 
-    printf("int: %i\n", *ii);
+    ht_remove(ht, "int");
 
-    printf("test: %s\n", (char*)ht_get(ht, "test"));
+    if (ht_get(ht, "int", &ii))
+    {
+        printf("int: %i\n", *ii);
+    }
+    else
+    {
+        printf("int not in ht\n");
+    }
 
-    free(dav);
-    free(bav);
-    free(dav2);
-    free(dav3);
     free(i);
 
     ht_free(&ht);
