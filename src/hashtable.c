@@ -34,7 +34,7 @@ static hashentry_key_t hash_djb2(char* str)
     return hash;
 }
 
-hashtable_t* ht_new(size_t capacity)
+hashtable_t* ht_new(size_t num_slots)
 {
     printf("entry: %i\n", sizeof(hashentry_t));
     printf("  key: %i\n", sizeof(hashentry_key_t));
@@ -45,16 +45,16 @@ hashtable_t* ht_new(size_t capacity)
     printf("table: %i\n", sizeof(hashtable_t));
     printf("  capacity: %i\n", sizeof(size_t));
     printf("  count: %i\n", sizeof(size_t));
-    printf("  entries: %i\n\n", sizeof(hashentry_t**));
+    printf("  slots: %i\n\n", sizeof(hashentry_t**));
 
     hashtable_t* ht = malloc(sizeof(hashtable_t));
     if (!ht)
         return NULL;
 
-    ht->capacity = capacity;
+    ht->num_slots = num_slots;
     ht->count = 0;
-    ht->entries = calloc(capacity, sizeof(hashentry_t*));
-    if (!ht->entries)
+    ht->slots = calloc(num_slots, sizeof(hashentry_t*));
+    if (!ht->slots)
     {
         free(ht);
         return NULL;
@@ -68,9 +68,9 @@ void ht_free(hashtable_t** ht)
     hashtable_t* h = *ht;
     if (!h)
         return;
-    for (size_t i = 0; i < h->capacity; ++i)
+    for (size_t i = 0; i < h->num_slots; ++i)
     {
-        hashentry_t* entry = h->entries[i];
+        hashentry_t* entry = h->slots[i];
         while (entry)
         {
             hashentry_t* next = entry->next;
@@ -82,7 +82,7 @@ void ht_free(hashtable_t** ht)
             entry = next;
         }
     }
-    free(h->entries);
+    free(h->slots);
     free(h);
     *ht = NULL;
 }
@@ -94,9 +94,9 @@ void ht_put(hashtable_t* ht, char* key, void* value)
     hashentry_key_t hash = hash_djb2(key);
 
     // calc index
-    size_t idx = hash % ht->capacity;
+    size_t idx = hash % ht->num_slots;
     // get linked list of entries
-    hashentry_t* first = ht->entries[idx];
+    hashentry_t* first = ht->slots[idx];
     
     if (first)
     {
@@ -119,13 +119,13 @@ void ht_put(hashtable_t* ht, char* key, void* value)
         }
         // no entry with same key found
         // insert at beginning of list
-        ht->entries[idx] = he_new(hash, value, ht->entries[idx]);
+        ht->slots[idx] = he_new(hash, value, ht->slots[idx]);
         ht->count++;
     }
     else
     {
         // no entry with this key yet
-        ht->entries[idx] = he_new(hash, value, NULL);
+        ht->slots[idx] = he_new(hash, value, NULL);
         ht->count++;
     }
 }
@@ -137,8 +137,8 @@ int ht_get(hashtable_t* ht, char* key, void** value)
         return 0;
     hashentry_key_t hash = hash_djb2(key);
 
-    size_t idx = hash % ht->capacity;
-    hashentry_t* first = ht->entries[idx];
+    size_t idx = hash % ht->num_slots;
+    hashentry_t* first = ht->slots[idx];
 
     if (first)
     {
@@ -162,14 +162,14 @@ void ht_remove(hashtable_t* ht, char* key)
         return;
     hashentry_key_t hash = hash_djb2(key);
 
-    size_t idx = hash % ht->capacity;
-    hashentry_t* first = ht->entries[idx];
+    size_t idx = hash % ht->num_slots;
+    hashentry_t* first = ht->slots[idx];
 
     if (first)
     {
         if (first->key == hash)
         {
-            ht->entries[idx] = first->next;
+            ht->slots[idx] = first->next;
 
             free(first);
             return;

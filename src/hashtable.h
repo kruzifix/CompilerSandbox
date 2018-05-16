@@ -4,9 +4,9 @@
 typedef struct hashentry_t hashentry_t;
 
 typedef struct {
-    size_t capacity;
+    size_t num_slots;
     size_t count;
-    hashentry_t** entries;
+    hashentry_t** slots;
     // keep object pool of hash entries!
 } hashtable_t;
 
