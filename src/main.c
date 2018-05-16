@@ -144,6 +144,11 @@ int main(int argc, const char* argv[])
 
             ht_remove(ht, key);
         }
+
+        if (strcmp(input, "count") == 0)
+        {
+            printf("count: %i\n", ht->count);
+        }
     }
 
     ht_free(&ht);

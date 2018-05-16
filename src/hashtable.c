@@ -171,6 +171,7 @@ void ht_remove(hashtable_t* ht, char* key)
             ht->slots[idx] = first->next;
 
             he_free(first);
+            ht->count--;
             return;
         }
 
@@ -182,6 +183,7 @@ void ht_remove(hashtable_t* ht, char* key)
             {
                 first->next = entry->next;
                 he_free(entry);
+                ht->count--;
                 return;
             }
 
