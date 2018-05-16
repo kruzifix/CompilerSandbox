@@ -15,5 +15,6 @@ void ht_free(hashtable_t** ht);
 
 void ht_put(hashtable_t* ht, char* key, void* value);
 void* ht_get(hashtable_t* ht, char* key);
+void ht_remove(hashtable_t* ht, char* key);
 
 #endif
