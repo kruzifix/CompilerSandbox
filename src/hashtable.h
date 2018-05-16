@@ -1,11 +1,15 @@
 #ifndef _hashtable_h
 #define _hashtable_h
 
-typedef unsigned long hashentry_key_t;
+#define HASHTABLE_INCLUDE_KEY_IN_ENTRY
 
+typedef unsigned long hashentry_key_t;
 typedef struct hashentry_t hashentry_t;
 
 struct hashentry_t {
+#ifdef HASHTABLE_INCLUDE_KEY_IN_ENTRY
+    char* key_value; // 8 byte
+#endif
     hashentry_key_t key; // 4 byte
     // frees data ptr if != 0
     char free_data; // 1 byte

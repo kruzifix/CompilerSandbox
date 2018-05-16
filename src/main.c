@@ -5,6 +5,7 @@
 
 #include "config.h"
 #include "scanner.h"
+
 #include "hashtable.h"
 
 #include "vld.h"
@@ -33,6 +34,18 @@ char* read_file(const char* filename)
 int main(int argc, const char* argv[])
 {
 #if 1
+    {
+        hashentry_t t;
+        printf("%i\n", sizeof(t));
+#ifdef HASHTABLE_INCLUDE_KEY_IN_ENTRY
+        printf(" %i\n", sizeof(t.key_value));
+#endif
+        printf(" %i\n", sizeof(t.key));
+        printf(" %i\n", sizeof(t.free_data));
+        printf(" %i\n", sizeof(t._pad));
+        printf(" %i\n", sizeof(t.data));
+        printf(" %i\n", sizeof(t.next));
+    }
 
     hashtable_t* ht = ht_new(16);
 
@@ -162,7 +175,11 @@ int main(int argc, const char* argv[])
                 hashentry_t* entry = ht->slots[i];
                 while (entry)
                 {
-                    printf("'%u'[%i]: '%s'\n", entry->key, entry->free_data, (char*)entry->data);
+#ifdef HASHTABLE_INCLUDE_KEY_IN_ENTRY
+                    printf("'%s'[%u]%s: '%s'\n", entry->key_value, entry->key, entry->free_data ? " free" : "", (char*)entry->data);
+#else
+                    printf("'%s'%s: '%s'\n", entry->key, entry->free_data ? " free" : "", (char*)entry->data);
+#endif
                     entry = entry->next;
                 }
             }

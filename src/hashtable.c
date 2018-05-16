@@ -1,14 +1,21 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "hashtable.h"
 
-
+#ifdef HASHTABLE_INCLUDE_KEY_IN_ENTRY
+static hashentry_t* he_new(char* key_value, hashentry_key_t key, char free_data, void* data, hashentry_t* next)
+#else
 static hashentry_t* he_new(hashentry_key_t key, char free_data, void* data, hashentry_t* next)
+#endif
 {
     hashentry_t* he = malloc(sizeof(hashentry_t));
     if (!he)
         return NULL;
+#ifdef HASHTABLE_INCLUDE_KEY_IN_ENTRY
+    he->key_value = _strdup(key_value);
+#endif
     he->key = key;
     he->free_data = free_data;
     he->data = data;
@@ -20,6 +27,9 @@ static void he_free(hashentry_t* he)
 {
     if (!he)
         return;
+#ifdef HASHTABLE_INCLUDE_KEY_IN_ENTRY
+    free(he->key_value);
+#endif
     if (he->free_data && he->data)
         free(he->data);
     free(he);
@@ -118,13 +128,21 @@ void ht_put(hashtable_t* ht, char* key, void* value, char free_data)
         }
         // no entry with same key found
         // insert at beginning of list
+#ifdef HASHTABLE_INCLUDE_KEY_IN_ENTRY
+        ht->slots[idx] = he_new(key, hash, free_data, value, ht->slots[idx]);
+#else
         ht->slots[idx] = he_new(hash, free_data, value, ht->slots[idx]);
+#endif
         ht->count++;
     }
     else
     {
         // no entry with this key yet
+#ifdef HASHTABLE_INCLUDE_KEY_IN_ENTRY
+        ht->slots[idx] = he_new(key, hash, free_data, value, NULL);
+#else
         ht->slots[idx] = he_new(hash, free_data, value, NULL);
+#endif
         ht->count++;
     }
 }
