@@ -7,6 +7,7 @@ typedef struct {
     size_t capacity;
     size_t count;
     hashentry_t** entries;
+    // keep object pool of hash entries!
 } hashtable_t;
 
 hashtable_t* ht_new(size_t capacity);

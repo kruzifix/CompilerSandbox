@@ -33,12 +33,18 @@ char* read_file(const char* filename)
 int main(int argc, const char* argv[])
 {
 #if 1
+
     hashtable_t* ht = ht_new(4);
 
-    ht_put(ht, "david", _strdup("david"));
-    ht_put(ht, "bavid", _strdup("bavid"));
-    ht_put(ht, "david2", _strdup("david2"));
-    ht_put(ht, "david3", _strdup("david3"));
+    char* dav = _strdup("david");
+    char* bav = _strdup("bavid");
+    char* dav2 = _strdup("david2");
+    char* dav3 = _strdup("david3");
+
+    ht_put(ht, "david", "david");
+    ht_put(ht, "bavid", bav);
+    ht_put(ht, "david2", dav2);
+    ht_put(ht, "david3", dav3);
 
     int* i = malloc(sizeof(int));
     *i = 15;
@@ -50,11 +56,18 @@ int main(int argc, const char* argv[])
     printf("david2: %s\n", (char*)ht_get(ht, "david2"));
     printf("david3: %s\n", (char*)ht_get(ht, "david3"));
 
-    int* ii = ht_get(ht, "int");
+    int* ii = NULL;
+    ii = ht_get(ht, "int");
 
     printf("int: %i\n", *ii);
 
     printf("test: %s\n", (char*)ht_get(ht, "test"));
+
+    free(dav);
+    free(bav);
+    free(dav2);
+    free(dav3);
+    free(i);
 
     ht_free(&ht);
     return 0;

@@ -5,12 +5,11 @@
 
 typedef unsigned long hashentry_key_t;
 
-// hashentry holds data as void*
-// this memory gets freed, when the hashentry is freed
 struct hashentry_t {
-    hashentry_key_t key;
-    void* data;
-    struct hashentry_t* next;
+    hashentry_key_t key; // 4 byte
+    char _pad[4]; // 4 byte
+    void* data; // 8 byte
+    struct hashentry_t* next; // 8 byte
 };
 
 static hashentry_t* he_new(hashentry_key_t key, void* data, hashentry_t* next)
@@ -37,6 +36,17 @@ static hashentry_key_t hash_djb2(char* str)
 
 hashtable_t* ht_new(size_t capacity)
 {
+    printf("entry: %i\n", sizeof(hashentry_t));
+    printf("  key: %i\n", sizeof(hashentry_key_t));
+    printf("  _pad: %i\n", sizeof(char[4]));
+    printf("  data: %i\n", sizeof(void*));
+    printf("  next: %i\n\n", sizeof(hashentry_t*));
+
+    printf("table: %i\n", sizeof(hashtable_t));
+    printf("  capacity: %i\n", sizeof(size_t));
+    printf("  count: %i\n", sizeof(size_t));
+    printf("  entries: %i\n\n", sizeof(hashentry_t**));
+
     hashtable_t* ht = malloc(sizeof(hashtable_t));
     if (!ht)
         return NULL;
@@ -65,8 +75,8 @@ void ht_free(hashtable_t** ht)
         {
             hashentry_t* next = entry->next;
 
-            if (entry->data)
-                free(entry->data);
+            //if (entry->data)
+            //    free(entry->data);
             free(entry);
 
             entry = next;
@@ -98,8 +108,10 @@ void ht_put(hashtable_t* ht, char* key, void* value)
             if (node->key == hash)
             {
                 // replace data
-                if (node->data)
-                    free(node->data);
+
+                //if (node->data)
+                //    free(node->data);
+
                 node->data = value;
                 return;
             }
@@ -121,7 +133,7 @@ void ht_put(hashtable_t* ht, char* key, void* value)
 void* ht_get(hashtable_t* ht, char* key)
 {
     if (!ht)
-        return;
+        return NULL;
     hashentry_key_t hash = hash_djb2(key);
 
     size_t idx = hash % ht->capacity;
