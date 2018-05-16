@@ -121,6 +121,7 @@ int main(int argc, const char* argv[])
             char* value = key;
             while (*value && *value != ' ')
                 value++;
+
             if (!*value)
             {
                 printf("expected value!\n");
@@ -130,6 +131,18 @@ int main(int argc, const char* argv[])
             value++;
 
             ht_put(ht, key, _strdup(value), 1);
+        }
+
+        if (strncmp(input, "remove ", 7) == 0)
+        {
+            char* key = (input + 7);
+            if (!*key)
+            {
+                printf("expected key!\n");
+                continue;
+            }
+
+            ht_remove(ht, key);
         }
     }
 
