@@ -48,19 +48,6 @@ static hashentry_key_t hash_djb2(char* str)
 
 hashtable_t* ht_new(size_t num_slots)
 {
-    hashentry_t t;
-    printf("entry: %i\n", sizeof(t));
-    printf("  key: %i\n", sizeof(t.key));
-    printf("  free_data: %i\n", sizeof(t.free_data));
-    printf("  _pad: %i\n", sizeof(t._pad));
-    printf("  data: %i\n", sizeof(t.data));
-    printf("  next: %i\n\n", sizeof(t.next));
-
-    printf("table: %i\n", sizeof(hashtable_t));
-    printf("  capacity: %i\n", sizeof(size_t));
-    printf("  count: %i\n", sizeof(size_t));
-    printf("  slots: %i\n\n", sizeof(hashentry_t**));
-
     hashtable_t* ht = malloc(sizeof(hashtable_t));
     if (!ht)
         return NULL;
