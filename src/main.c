@@ -8,6 +8,8 @@
 
 #include "hashtable.h"
 
+#include <time.h>
+
 #include <vld.h>
 
 stack_allocator_t* global_stack_alloc = NULL;
@@ -31,6 +33,27 @@ char* read_file(const char* filename)
     return buffer;
 }
 
+static void put_test(hashtable_t* ht, size_t num)
+{
+    long start = clock();
+
+    char name[31];
+    name[30] = '\0';
+    for (size_t i = 0; i < num; i++)
+    {
+        for (int j = 0; j < 30; j++)
+        {
+            name[j] = (char)(48 + rand() % 78);
+        }
+        ht_put(ht, name, NULL, 0);
+    }
+
+    long end = clock();
+
+    double dur = end - start;
+    printf("putting %zu took %f s.\n", num, dur / CLOCKS_PER_SEC);
+}
+
 int main(int argc, const char* argv[])
 {
 #if 1
@@ -47,48 +70,18 @@ int main(int argc, const char* argv[])
         printf(" %i\n", sizeof(t.next));
     }
 
-    hashtable_t* ht = ht_new(16);
+    hashtable_t* ht = ht_new(4096);
 
-    ht_put(ht, "david", "david", 0);
-    ht_put(ht, "bavid", "bavid", 0);
-    ht_put(ht, "david2", "david2", 0);
-    ht_put(ht, "david3", "david3", 0);
-
-    char* str = NULL;
-    if (ht_get(ht, "david", &str))
-    {
-        printf("got david: %s\n", str);
-    }
-    else
-    {
-        printf("david not in ht\n");
-    }
-
-    int* i = malloc(sizeof(int));
-    *i = 15;
-
-    ht_put(ht, "int", i, 1);
-
-    int* ii = NULL;
-    if (ht_get(ht, "int", &ii))
-    {
-        printf("int: %i\n", *ii);
-    }
-    else
-    {
-        printf("int not in ht\n");
-    }
-
-    ht_remove(ht, "int");
-
-    if (ht_get(ht, "int", &ii))
-    {
-        printf("int: %i\n", *ii);
-    }
-    else
-    {
-        printf("int not in ht\n");
-    }
+    put_test(ht, 10);
+    ht_clear(ht);
+    put_test(ht, 100);
+    ht_clear(ht);
+    put_test(ht, 1000);
+    ht_clear(ht);
+    put_test(ht, 10000);
+    ht_clear(ht);
+    put_test(ht, 100000);
+    //ht_clear(ht);
 
     ht_repl(ht);
 
