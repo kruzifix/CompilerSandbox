@@ -302,7 +302,7 @@ void ht_repl(hashtable_t* ht)
 #ifdef HASHTABLE_INCLUDE_KEY_IN_ENTRY
                     printf("'%s'[%u]%s: '%s'\n", entry->key_value, entry->key, entry->free_data ? " free" : "", (char*)entry->data);
 #else
-                    printf("'%s'%s: '%s'\n", entry->key, entry->free_data ? " free" : "", (char*)entry->data);
+                    printf("'%u'%s: '%s'\n", entry->key, entry->free_data ? " free" : "", (char*)entry->data);
 #endif
                     entry = entry->next;
                 }
