@@ -10,16 +10,21 @@ stack_allocator_t* global_stack_alloc;
 
 typedef enum {
     INTEGER,
-    FLOATING
+    FLOATING,
+    BOOLEAN
 } object_type;
 
 typedef struct {
     object_type type;
     union {
+        char boolean;
         long integer;
         float floating;
     } data;
 } object;
+
+object* obj_true;
+object* obj_false;
 
 object* make_object()
 {
@@ -48,10 +53,28 @@ object* make_floating(float value)
     return obj;
 }
 
-char is_integer(object* obj)
+char is_type(object* obj, object_type type)
 {
-    return obj->type == INTEGER;
+    return obj->type == type;
 }
+
+char is_false(object* obj)
+{
+    return obj == obj_false;
+}
+
+void init()
+{
+    obj_true = make_object();
+    obj_true->type = BOOLEAN;
+    obj_true->data.boolean = 1;
+
+    obj_false = make_object();
+    obj_false->type = BOOLEAN;
+    obj_false->data.boolean = 0;
+}
+
+/* READ */
 
 char is_digit(int c)
 {
@@ -101,7 +124,21 @@ object* read(FILE* in)
 
     int c = getc(in);
     
-    if (is_digit(c) || (c == '-' && is_digit(peek(in))))
+    if (c == '#')
+    {
+        c = getc(in);
+        switch (c)
+        {
+        case 't':
+            return obj_true;
+        case 'f':
+            return obj_false;
+        default:
+            fprintf(stderr, "Unknown boolean type\n");
+            exit(1);
+        }
+    }
+    else if (is_digit(c) || (c == '-' && is_digit(peek(in))))
     {
         // integer
         short sign = 1;
@@ -155,15 +192,22 @@ object* read(FILE* in)
     exit(1);
 }
 
+/* EVAL */
+
 object* eval(object* exp)
 {
     return exp;
 }
 
+/* PRINT */
+
 void write(object* obj)
 {
     switch (obj->type)
     {
+    case BOOLEAN:
+        printf("#%c", is_false(obj) ? 'f' : 't');
+        break;
     case INTEGER:
         printf("%ld", obj->data.integer);
         break;
@@ -178,6 +222,8 @@ void write(object* obj)
 
 int main(int argc, char* argv[])
 {
+    init();
+
     while (1)
     {
         printf("> ");
