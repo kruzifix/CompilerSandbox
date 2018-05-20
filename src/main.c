@@ -15,10 +15,13 @@ typedef enum {
     BOOLEAN,
     CHARACTER,
     STRING,
-    EMPTY_LIST
+    EMPTY_LIST,
+    PAIR
 } object_type;
 
-typedef struct {
+typedef struct object object;
+
+struct object {
     object_type type;
     union {
         char boolean;
@@ -26,8 +29,12 @@ typedef struct {
         long integer;
         float floating;
         char* string;
+        struct {
+            object* car;
+            object* cdr;
+        } pair;
     } data;
-} object;
+};
 
 object* obj_empty_list;
 object* obj_true;
@@ -82,6 +89,15 @@ object* make_string(char* value)
     return obj;
 }
 
+object* cons(object* car, object* cdr)
+{
+    object* obj = make_object();
+    obj->type = PAIR;
+    obj->data.pair.car = car;
+    obj->data.pair.cdr = cdr;
+    return obj;
+}
+
 char is_type(object* obj, object_type type)
 {
     return obj->type == type;
@@ -90,6 +106,26 @@ char is_type(object* obj, object_type type)
 char is_false(object* obj)
 {
     return obj == obj_false;
+}
+
+object* car(object* obj)
+{
+    if (is_type(obj, PAIR))
+    {
+        return obj->data.pair.car;
+    }
+    fprintf(stderr, "object not a pair\n");
+    exit(1);
+}
+
+object* cdr(object* obj)
+{
+    if (is_type(obj, PAIR))
+    {
+        return obj->data.pair.cdr;
+    }
+    fprintf(stderr, "object not a pair\n");
+    exit(1);
 }
 
 void init()
@@ -177,6 +213,49 @@ object* read_character(FILE* in)
     char val = c;
     peek_character_end(in);
     return make_character(val);
+}
+
+object* read(FILE* in);
+
+object* read_pair(FILE* in)
+{
+    eat_whitespace(in);
+
+    int c = getc(in);
+    if (c == ')')
+    {
+        return obj_empty_list;
+    }
+    ungetc(c, in);
+
+    object* car_obj = read(in);
+
+    eat_whitespace(in);
+
+    c = getc(in);
+    if (c == '.')
+    {
+        /* read improper list */
+        c = peek(in);
+        if (!is_delimiter(c))
+        {
+            fprintf(stderr, "dot not followed by delimiter\n");
+            exit(1);
+        }
+        object* cdr_obj = read(in);
+        eat_whitespace(in);
+        c = getc(in);
+        if (c != ')')
+        {
+            fprintf(stderr, "where was the trailing right paren?\n");
+            exit(1);
+        }
+        return cons(car_obj, cdr_obj);
+    }
+    /* read list */
+    ungetc(c, in);
+    object* cdr_obj = read_pair(in);
+    return cons(car_obj, cdr_obj);
 }
 
 object* read(FILE* in)
@@ -280,16 +359,7 @@ object* read(FILE* in)
     }
     else if (c == '(')
     {
-        /* read the empty list */
-        eat_whitespace(in);
-        c = getc(in);
-        if (c == ')')
-            return obj_empty_list;
-        else
-        {
-            fprintf(stderr, "unexpected character '%c'. Expecting ')'\n", c);
-            exit(1);
-        }
+        return read_pair(in);
     }
     else
     {
@@ -308,6 +378,27 @@ object* eval(object* exp)
 }
 
 /* PRINT */
+
+void write(object* obj);
+
+void write_pair(object* pair)
+{
+    object* car_obj = car(pair);
+    object* cdr_obj = cdr(pair);
+    write(car_obj);
+    if (is_type(cdr_obj, PAIR))
+    {
+        printf(" ");
+        write_pair(cdr_obj);
+    }
+    else if (is_type(cdr_obj, EMPTY_LIST))
+        return;
+    else
+    {
+        printf(" . ");
+        write(cdr_obj);
+    }
+}
 
 void write(object* obj)
 {
@@ -351,6 +442,11 @@ void write(object* obj)
             }
             putchar('"');
         }
+        break;
+    case PAIR:
+        printf("(");
+        write_pair(obj);
+        printf(")");
         break;
     default:
         fprintf(stderr, "unknown object type\n");
