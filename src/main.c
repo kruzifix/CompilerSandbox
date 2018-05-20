@@ -57,7 +57,7 @@ object* obj_empty_list;
 object* obj_true;
 object* obj_false;
 object* obj_symbol_table;
-
+object* obj_quote_symbol;
 
 void add_to_object_list(object* obj)
 {
@@ -228,6 +228,7 @@ void init()
     obj_false->data.boolean = 0;
 
     obj_symbol_table = obj_empty_list;
+    obj_quote_symbol = make_symbol("quote");
 }
 
 void mark_object(object* obj)
@@ -535,6 +536,10 @@ object* read(FILE* in)
     {
         return read_pair(in);
     }
+    else if (c == '\'')
+    {
+        return cons(obj_quote_symbol, cons(read(in), obj_empty_list));
+    }
     else
     {
         fprintf(stderr, "bad input. Unexpected '%c'\n", c);
@@ -547,9 +552,50 @@ object* read(FILE* in)
 
 /* EVAL */
 
+#define cadr(obj) car(cdr(obj))
+
+char is_self_evaluating(object* exp)
+{
+    return is_type(exp, BOOLEAN) ||
+        is_type(exp, INTEGER) ||
+        is_type(exp, FLOATING) ||
+        is_type(exp, CHARACTER) ||
+        is_type(exp, STRING);
+}
+
+char is_tagged_list(object* expression, object* tag)
+{
+    if (is_type(expression, PAIR))
+    {
+        object* the_car = car(expression);
+        return is_type(the_car, SYMBOL) && (the_car == tag);
+    }
+    return 0;
+}
+
+char is_quoted(object* exp)
+{
+    return is_tagged_list(exp, obj_quote_symbol);
+}
+
+object* text_of_quotation(object* exp)
+{
+    return cadr(exp);
+}
+
 object* eval(object* exp)
 {
-    return exp;
+    if (is_self_evaluating(exp))
+        return exp;
+    else if (is_quoted(exp))
+        return text_of_quotation(exp);
+    else
+    {
+        fprintf(stderr, "cannot eval unknown expression type\n");
+        _exit(1);
+    }
+    fprintf(stderr, "eval illegal state\n");
+    _exit(1);
 }
 
 /* PRINT */
@@ -653,8 +699,7 @@ int main(int argc, char* argv[])
     while (1)
     {
         printf("> ");
-        object* expr = eval(read(stdin));
-        write(expr);
+        write(eval(read(stdin)));
         printf("\n");
 
         do_gc();
