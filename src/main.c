@@ -26,6 +26,7 @@ typedef struct object object;
 
 struct object {
     object_type type;
+    int tag;
     union {
         char boolean;
         char character;
@@ -40,10 +41,37 @@ struct object {
     } data;
 };
 
+typedef struct object_list object_list;
+
+struct object_list {
+    object* obj;
+    object_list* next;
+};
+
+object_list* objects;
+int current_tag = 0;
+unsigned int allocations = 0;
+unsigned int sweep_limit = 4;
+
 object* obj_empty_list;
 object* obj_true;
 object* obj_false;
 object* obj_symbol_table;
+
+
+void add_to_object_list(object* obj)
+{
+    object_list* entry = malloc(sizeof(object_list));
+    if (!entry)
+    {
+        fprintf(stderr, "out of memory\n");
+        _exit(1);
+    }
+    entry->obj = obj;
+    entry->next = objects;
+    objects = entry;
+    allocations++;
+}
 
 object* make_object()
 {
@@ -53,21 +81,30 @@ object* make_object()
         fprintf(stderr, "out of memory\n");
         _exit(1);
     }
+    obj->tag = 0;
+    // add to objects list
+    add_to_object_list(obj);
+    
     return obj;
 }
 
 void free_object(object* obj)
 {
-    if (!obj || obj == obj_empty_list || obj == obj_false || obj == obj_true)
+    if (!obj)
         return;
-    if (obj->type == PAIR)
+    allocations--;
+    switch (obj->type)
     {
-        free_object(obj->data.pair.car);
-        free_object(obj->data.pair.cdr);
-    }
-    else if (obj->type == STRING)
-    {
+    case PAIR:
+        //free_object(obj->data.pair.car);
+        //free_object(obj->data.pair.cdr);
+        break;
+    case STRING:
         free(obj->data.string);
+        break;
+    case SYMBOL:
+        free(obj->data.symbol);
+        break;
     }
     free(obj);
 }
@@ -177,6 +214,8 @@ object* make_symbol(char* value)
 
 void init()
 {
+    objects = NULL;
+
     obj_empty_list = make_object();
     obj_empty_list->type = EMPTY_LIST;
 
@@ -189,6 +228,61 @@ void init()
     obj_false->data.boolean = 0;
 
     obj_symbol_table = obj_empty_list;
+}
+
+void mark_object(object* obj)
+{
+    if (!obj)
+        return;
+    obj->tag = current_tag;
+    if (is_type(obj, PAIR))
+    {
+        mark_object(car(obj));
+        mark_object(cdr(obj));
+    }
+}
+
+void mark()
+{
+    current_tag++;
+
+    mark_object(obj_empty_list);
+    mark_object(obj_true);
+    mark_object(obj_false);
+    mark_object(obj_symbol_table);
+}
+
+void sweep()
+{
+    // is object at head of objects list untagged?
+    while (objects && objects->obj->tag != current_tag)
+    {
+        object_list* head = objects;
+        objects = objects->next;
+        free_object(head->obj);
+        free(head);
+    }
+
+    if (!objects)
+        return;
+
+    object_list* prev = objects;
+    object_list* current = objects->next;
+    while (current)
+    {
+        if (current->obj->tag != current_tag)
+        {
+            free_object(current->obj);
+
+            object_list* entry = current;
+            prev->next = current->next;
+            current = current->next;
+            free(entry);
+            continue;
+        }
+        prev = current;
+        current = current->next;
+    }
 }
 
 /* READ */
@@ -538,6 +632,20 @@ void write(object* obj)
     }
 }
 
+void do_gc()
+{
+    //printf("allocations: %u\n", allocations);
+    if (allocations >= sweep_limit)
+    {
+        mark();
+        sweep();
+
+        sweep_limit = allocations + allocations / 2;
+
+        //printf("allocations after collection: %u\nnew sweep limit: %u\n", allocations, sweep_limit);
+    }
+}
+
 int main(int argc, char* argv[])
 {
     init();
@@ -548,16 +656,17 @@ int main(int argc, char* argv[])
         object* expr = eval(read(stdin));
         write(expr);
         printf("\n");
-        //free_object(expr);
+
+        do_gc();
     }
 }
 
 void panic_exit(const char* message, char* file, int line)
 {
-    free_object(obj_symbol_table);
-    free(obj_empty_list);
-    free(obj_true);
-    free(obj_false);
+    current_tag++;
+    sweep();
+
+    printf("allocations after final sweep: %u\n", allocations);
 
     fprintf(stderr, "exiting in file %s at line %i\n", file, line);
 
