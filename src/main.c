@@ -13,7 +13,8 @@ typedef enum {
     INTEGER,
     FLOATING,
     BOOLEAN,
-    CHARACTER
+    CHARACTER,
+    STRING
 } object_type;
 
 typedef struct {
@@ -23,6 +24,7 @@ typedef struct {
         char character;
         long integer;
         float floating;
+        char* string;
     } data;
 } object;
 
@@ -61,6 +63,20 @@ object* make_character(char value)
     object* obj = make_object();
     obj->type = CHARACTER;
     obj->data.character = value;
+    return obj;
+}
+
+object* make_string(char* value)
+{
+    object* obj = make_object();
+    obj->type = STRING;
+    obj->data.string = malloc(strlen(value) + 1);
+    if (!obj->data.string)
+    {
+        fprintf(stderr, "out of memory\n");
+        exit(1);
+    }
+    strcpy(obj->data.string, value);
     return obj;
 }
 
@@ -225,6 +241,38 @@ object* read(FILE* in)
             exit(1);
         }
     }
+    else if (c == '"')
+    {
+#define BUFFER_MAX 1024
+        char buffer[BUFFER_MAX];
+        int len = 0;
+
+        while ((c = getc(in)) != '"')
+        {
+            if (c == '\\')
+            {
+                c = getc(in);
+                if (c == 'n')
+                    c = '\n';
+            }
+            if (c == EOF)
+            {
+                fprintf(stderr, "unterminated string literal\n");
+                exit(1);
+            }
+            if (len < BUFFER_MAX - 1)
+                buffer[len++] = c;
+            else
+            {
+                fprintf(stderr, "string too long. max length: %i\n", BUFFER_MAX);
+                exit(1);
+            }
+        }
+        buffer[len] = '\0';
+        return make_string(buffer);
+
+#undef BUFFER_MAX
+    }
     else
     {
         fprintf(stderr, "bad input. Unexpected '%c'\n", c);
@@ -258,6 +306,30 @@ void write(object* obj)
         break;
     case FLOATING:
         printf("%f", obj->data.floating);
+        break;
+    case STRING: {
+            char* str = obj->data.string;
+            putchar('"');
+            while (*str)
+            {
+                switch (*str)
+                {
+                case '\n':
+                    printf("\\n");
+                    break;
+                case '\\':
+                    printf("\\\\");
+                    break;
+                case '"':
+                    printf("\\\"");
+                    break;
+                default:
+                    putchar(*str);
+                }
+                str++;
+            }
+            putchar('"');
+        }
         break;
     default:
         fprintf(stderr, "unknown object type\n");
