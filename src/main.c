@@ -12,13 +12,15 @@ stack_allocator_t* global_stack_alloc;
 typedef enum {
     INTEGER,
     FLOATING,
-    BOOLEAN
+    BOOLEAN,
+    CHARACTER
 } object_type;
 
 typedef struct {
     object_type type;
     union {
         char boolean;
+        char character;
         long integer;
         float floating;
     } data;
@@ -51,6 +53,14 @@ object* make_floating(float value)
     object* obj = make_object();
     obj->type = FLOATING;
     obj->data.floating = value;
+    return obj;
+}
+
+object* make_character(char value)
+{
+    object* obj = make_object();
+    obj->type = CHARACTER;
+    obj->data.character = value;
     return obj;
 }
 
@@ -109,6 +119,45 @@ void eat_whitespace(FILE* in)
     }
 }
 
+void peek_character_end(FILE *in)
+{
+    int c = getc(in);
+    if (c != '\'')
+    {
+        fprintf(stderr, "expected ' after character literal\n");
+        exit(1);
+    }
+    if (!is_delimiter(peek(in)))
+    {
+        fprintf(stderr, "character not followed by delimiter\n");
+        exit(1);
+    }
+}
+
+object* read_character(FILE* in)
+{
+    int c = getc(in);
+
+    switch (c)
+    {
+    case EOF:
+        fprintf(stderr, "incomplete character literal\n");
+        exit(1);
+    case '\\':
+        c = getc(in);
+        if (c == 'n')
+        {
+            peek_character_end(in);
+            return make_character('\n');
+        }
+        fprintf(stderr, "unknown escaped character literal\n");
+        exit(1);
+    }
+    char val = c;
+    peek_character_end(in);
+    return make_character(val);
+}
+
 object* read(FILE* in)
 {
     eat_whitespace(in);
@@ -124,6 +173,8 @@ object* read(FILE* in)
             return obj_true;
         case 'f':
             return obj_false;
+        case '\'':
+            return read_character(in);
         default:
             fprintf(stderr, "Unknown boolean type\n");
             exit(1);
@@ -198,6 +249,9 @@ void write(object* obj)
     {
     case BOOLEAN:
         printf("#%c", is_false(obj) ? 'f' : 't');
+        break;
+    case CHARACTER:
+        printf("#'%c'", obj->data.character);
         break;
     case INTEGER:
         printf("%ld", obj->data.integer);
