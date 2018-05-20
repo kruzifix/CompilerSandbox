@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include <vld.h>
 
@@ -76,19 +77,9 @@ void init()
 
 /* READ */
 
-char is_digit(int c)
-{
-    return c >= '0' && c <= '9';
-}
-
-char is_space(int c)
-{
-    return c == ' ' || c == '\t' || c == '\n';
-}
-
 char is_delimiter(int c)
 {
-    return is_space(c) || c == EOF ||
+    return isspace(c) || c == EOF ||
         c == '(' || c == ')' ||
         c == '"' || c == ';';
 }
@@ -106,7 +97,7 @@ void eat_whitespace(FILE* in)
 
     while ((c = getc(in)) != EOF)
     {
-        if (is_space(c))
+        if (isspace(c))
             continue;
         if (c == ';')
         {
@@ -138,7 +129,7 @@ object* read(FILE* in)
             exit(1);
         }
     }
-    else if (is_digit(c) || (c == '-' && is_digit(peek(in))))
+    else if (isdigit(c) || (c == '-' && isdigit(peek(in))))
     {
         // integer
         short sign = 1;
@@ -148,7 +139,7 @@ object* read(FILE* in)
             ungetc(c, in);
 
         long num = 0;
-        while (is_digit(c = getc(in)))
+        while (isdigit(c = getc(in)))
             num = num * 10 + (c - '0');
         num *= sign;
         if (is_delimiter(c))
@@ -161,7 +152,7 @@ object* read(FILE* in)
             float fnum = (float)num;
             int order = 10;
             //c = getc(in);
-            while (is_digit(c = getc(in)))
+            while (isdigit(c = getc(in)))
             {
                 fnum += (c - '0') / (float)order;
                 order *= 10;
