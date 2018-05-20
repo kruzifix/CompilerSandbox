@@ -10,7 +10,7 @@ stack_allocator_t* global_stack_alloc;
 
 typedef enum {
     INTEGER,
-    FLOAT
+    FLOATING
 } object_type;
 
 typedef struct {
@@ -37,6 +37,14 @@ object* make_integer(long value)
     object* obj = make_object();
     obj->type = INTEGER;
     obj->data.integer = value;
+    return obj;
+}
+
+object* make_floating(float value)
+{
+    object* obj = make_object();
+    obj->type = FLOATING;
+    obj->data.floating = value;
     return obj;
 }
 
@@ -111,6 +119,27 @@ object* read(FILE* in)
             ungetc(c, in);
             return make_integer(num);
         }
+        else if (c == '.')
+        {
+            float fnum = (float)num;
+            int order = 10;
+            //c = getc(in);
+            while (is_digit(c = getc(in)))
+            {
+                fnum += (c - '0') / (float)order;
+                order *= 10;
+            }
+            if (is_delimiter(c))
+            {
+                ungetc(c, in);
+                return make_floating(fnum);
+            }
+            else
+            {
+                fprintf(stderr, "number not followed by delimiter\n");
+                exit(1);
+            }
+        }
         else
         {
             fprintf(stderr, "number not followed by delimiter\n");
@@ -137,6 +166,9 @@ void write(object* obj)
     {
     case INTEGER:
         printf("%ld", obj->data.integer);
+        break;
+    case FLOATING:
+        printf("%f", obj->data.floating);
         break;
     default:
         fprintf(stderr, "unknown object type\n");
