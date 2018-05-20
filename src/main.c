@@ -18,7 +18,8 @@ typedef enum {
     CHARACTER,
     STRING,
     EMPTY_LIST,
-    PAIR
+    PAIR,
+    SYMBOL
 } object_type;
 
 typedef struct object object;
@@ -35,12 +36,14 @@ struct object {
             object* car;
             object* cdr;
         } pair;
+        char* symbol;
     } data;
 };
 
 object* obj_empty_list;
 object* obj_true;
 object* obj_false;
+object* obj_symbol_table;
 
 object* make_object()
 {
@@ -67,6 +70,16 @@ void free_object(object* obj)
         free(obj->data.string);
     }
     free(obj);
+}
+
+char is_type(object* obj, object_type type)
+{
+    return obj->type == type;
+}
+
+char is_false(object* obj)
+{
+    return obj == obj_false;
 }
 
 object* make_integer(long value)
@@ -97,7 +110,7 @@ object* make_string(char* value)
 {
     object* obj = make_object();
     obj->type = STRING;
-    obj->data.string = malloc(strlen(value) + 1);
+    obj->data.string = calloc(strlen(value) + 1, sizeof(char));
     if (!obj->data.string)
     {
         fprintf(stderr, "out of memory\n");
@@ -114,16 +127,6 @@ object* cons(object* car, object* cdr)
     obj->data.pair.car = car;
     obj->data.pair.cdr = cdr;
     return obj;
-}
-
-char is_type(object* obj, object_type type)
-{
-    return obj->type == type;
-}
-
-char is_false(object* obj)
-{
-    return obj == obj_false;
 }
 
 object* car(object* obj)
@@ -146,6 +149,32 @@ object* cdr(object* obj)
     _exit(1);
 }
 
+object* make_symbol(char* value)
+{
+    object* element = obj_symbol_table;
+    // is symbol already in table?
+    while (element != obj_empty_list)
+    {
+        object* first = car(element);
+        if (strcmp(first->data.symbol, value) == 0)
+            return first;
+        element = cdr(element);
+    }
+
+    // make new object and add it to symbol table
+    object* obj = make_object();
+    obj->type = SYMBOL;
+    obj->data.symbol = calloc(strlen(value) + 1, sizeof(char));
+    if (!obj->data.symbol)
+    {
+        fprintf(stderr, "out of memory\n");
+        _exit(1);
+    }
+    strcpy(obj->data.symbol, value);
+    obj_symbol_table = cons(obj, obj_symbol_table);
+    return obj;
+}
+
 void init()
 {
     obj_empty_list = make_object();
@@ -158,6 +187,8 @@ void init()
     obj_false = make_object();
     obj_false->type = BOOLEAN;
     obj_false->data.boolean = 0;
+
+    obj_symbol_table = obj_empty_list;
 }
 
 /* READ */
@@ -167,6 +198,12 @@ char is_delimiter(int c)
     return isspace(c) || c == EOF ||
         c == '(' || c == ')' ||
         c == '"' || c == ';';
+}
+
+char is_initial(int c)
+{
+    return isalpha(c) || c == '*' || c == '/' || c == '>' ||
+        c == '<' || c == '=' || c == '?' || c == '!';
 }
 
 int peek(FILE* in)
@@ -281,7 +318,10 @@ object* read(FILE* in)
     eat_whitespace(in);
 
     int c = getc(in);
-    
+ 
+#define BUFFER_MAX 1024
+    char buffer[BUFFER_MAX];
+
     if (c == '#')
     {
         c = getc(in);
@@ -343,10 +383,34 @@ object* read(FILE* in)
             _exit(1);
         }
     }
+    else if (is_initial(c) ||
+        ((c == '-' || c == '+') && is_delimiter(peek(in))))
+    {
+        int len = 0;
+        while (is_initial(c) || isdigit(c) ||
+            c == '+' || c == '-')
+        {
+            /* subtract 1 to save space for '\0' terminator */
+            if (len < BUFFER_MAX - 1)
+                buffer[len++] = c;
+            else
+            {
+                fprintf(stderr, "symbol too long. Maximum length is %d\n", BUFFER_MAX);
+                _exit(1);
+            }
+            c = getc(in);
+        }
+        if (is_delimiter(c))
+        {
+            buffer[len] = '\0';
+            ungetc(c, in);
+            return make_symbol(buffer);
+        }
+        fprintf(stderr, "symbol not followed by delimiter. Found '%c'\n", c);
+        _exit(1);
+    }
     else if (c == '"')
     {
-#define BUFFER_MAX 1024
-        char buffer[BUFFER_MAX];
         int len = 0;
 
         while ((c = getc(in)) != '"')
@@ -366,14 +430,12 @@ object* read(FILE* in)
                 buffer[len++] = c;
             else
             {
-                fprintf(stderr, "string too long. max length: %i\n", BUFFER_MAX);
+                fprintf(stderr, "string too long. max length: %d\n", BUFFER_MAX);
                 _exit(1);
             }
         }
         buffer[len] = '\0';
         return make_string(buffer);
-
-#undef BUFFER_MAX
     }
     else if (c == '(')
     {
@@ -386,6 +448,7 @@ object* read(FILE* in)
     }
     fprintf(stderr, "read illegal state\n");
     _exit(1);
+#undef BUFFER_MAX
 }
 
 /* EVAL */
@@ -461,6 +524,9 @@ void write(object* obj)
             putchar('"');
         }
         break;
+    case SYMBOL:
+        printf("%s", obj->data.symbol);
+        break;
     case PAIR:
         printf("(");
         write_pair(obj);
@@ -482,12 +548,13 @@ int main(int argc, char* argv[])
         object* expr = eval(read(stdin));
         write(expr);
         printf("\n");
-        free_object(expr);
+        //free_object(expr);
     }
 }
 
 void panic_exit(const char* message, char* file, int line)
 {
+    free_object(obj_symbol_table);
     free(obj_empty_list);
     free(obj_true);
     free(obj_false);
