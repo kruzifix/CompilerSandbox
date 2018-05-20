@@ -3,179 +3,158 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "config.h"
-#include "scanner.h"
-
-#include "hashtable.h"
-
-#include <time.h>
-
 #include <vld.h>
 
-stack_allocator_t* global_stack_alloc = NULL;
+#include "config.h"
+stack_allocator_t* global_stack_alloc;
 
-char* read_file(const char* filename)
+typedef enum {
+    INTEGER,
+    FLOAT
+} object_type;
+
+typedef struct {
+    object_type type;
+    union {
+        long integer;
+        float floating;
+    } data;
+} object;
+
+object* make_object()
 {
-    FILE* f = fopen(filename, "r");
-    if (!f)
-        return NULL;
-    fseek(f, 0, SEEK_END);
-    long length = ftell(f);
-    fseek(f, 0, SEEK_SET);
-    char* buffer = _MALLOC(length + 1);
-    if (!buffer)
+    object* obj = malloc(sizeof(object));
+    if (!obj)
     {
-        EXIT("unable to alloc file buffer");
+        fprintf(stderr, "out of memory\n");
+        exit(1);
     }
-    //memset(buffer, '\0', length + 1);
-    fread(buffer, 1, length, f);
-    fclose(f);
-    return buffer;
+    return obj;
 }
 
-static void put_test(hashtable_t* ht, size_t num)
+object* make_integer(long value)
 {
-    long start = clock();
+    object* obj = make_object();
+    obj->type = INTEGER;
+    obj->data.integer = value;
+    return obj;
+}
 
-    char name[31];
-    name[30] = '\0';
-    for (size_t i = 0; i < num; i++)
+char is_integer(object* obj)
+{
+    return obj->type == INTEGER;
+}
+
+char is_digit(int c)
+{
+    return c >= '0' && c <= '9';
+}
+
+char is_space(int c)
+{
+    return c == ' ' || c == '\t' || c == '\n';
+}
+
+char is_delimiter(int c)
+{
+    return is_space(c) || c == EOF ||
+        c == '(' || c == ')' ||
+        c == '"' || c == ';';
+}
+
+int peek(FILE* in)
+{
+    int c = getc(in);
+    ungetc(c, in);
+    return c;
+}
+
+void eat_whitespace(FILE* in)
+{
+    int c;
+
+    while ((c = getc(in)) != EOF)
     {
-        for (int j = 0; j < 30; j++)
+        if (is_space(c))
+            continue;
+        if (c == ';')
         {
-            name[j] = (char)(48 + rand() % 78);
+            while (((c = getc(in)) != EOF) && (c != '\n'));
+            continue;
         }
-        ht_put(ht, name, NULL, 0);
+        ungetc(c, in);
+        break;
     }
-
-    long end = clock();
-
-    double dur = end - start;
-    printf("putting %zu took %f s.\n", num, dur / CLOCKS_PER_SEC);
 }
 
-int main(int argc, const char* argv[])
+object* read(FILE* in)
 {
-#if 1
+    eat_whitespace(in);
+
+    int c = getc(in);
+    
+    if (is_digit(c) || (c == '-' && is_digit(peek(in))))
     {
-        hashentry_t t;
-        printf("%i\n", sizeof(t));
-#ifdef HASHTABLE_INCLUDE_KEY_IN_ENTRY
-        printf(" %i\n", sizeof(t.key_value));
-#endif
-        printf(" %i\n", sizeof(t.key));
-        printf(" %i\n", sizeof(t.free_data));
-        printf(" %i\n", sizeof(t._pad));
-        printf(" %i\n", sizeof(t.data));
-        printf(" %i\n", sizeof(t.next));
-    }
+        // integer
+        short sign = 1;
+        if (c == '-')
+            sign = -1;
+        else
+            ungetc(c, in);
 
-    hashtable_t* ht = ht_new(4096);
-
-    put_test(ht, 10);
-    ht_clear(ht);
-    put_test(ht, 100);
-    ht_clear(ht);
-    put_test(ht, 1000);
-    ht_clear(ht);
-    put_test(ht, 10000);
-    ht_clear(ht);
-    put_test(ht, 100000);
-    //ht_clear(ht);
-
-    ht_repl(ht);
-
-    ht_free(&ht);
-    return EXIT_SUCCESS;
-#else
-    if (argc != 2)
-    {
-        printf("expected file path\n");
-        return 1;
-    }
-
-    global_stack_alloc = sa_new(1024);
-
-    char* content = read_file(argv[1]);
-    if (!content)
-    {
-        printf("empty file\n");
-
-        sa_free(&global_stack_alloc);
-        return 1;
-    }
-
-    scanner_t* scanner = scanner_new(content);
-    if (!scanner)
-    {
-        EXIT("unable to create scanner\n");
-    }
-
-    token_t tok;
-    do {
-        scanner_scan(scanner, &tok);
-        printf("<%i: ", tok.line);
-        switch (tok.type)
+        long num = 0;
+        while (is_digit(c = getc(in)))
+            num = num * 10 + (c - '0');
+        num *= sign;
+        if (is_delimiter(c))
         {
-        case TOK_ID:
-            printf("ID, %s>\n", tok.lexeme);
-            break;
-        case TOK_INT:
-            printf("INT, %i>\n", tok.i_value);
-            break;
-        case TOK_FLOAT:
-            printf("FLOAT, %f>\n", tok.f_value);
-            break;
-        case TOK_EOF:
-            printf("EOF>\n");
-            break;
-        case TOK_OP:
-            printf("OP, %c>\n", tok.i_value);
-            break;
-        case TOK_FALSE:
-            printf("false>\n");
-            break;
-        case TOK_TRUE:
-            printf("true>\n");
-            break;
-        case TOK_LESS:
-            printf("LESS>\n");
-            break;
-        case TOK_LESSEQUAL:
-            printf("LESSEQUAL>\n");
-            break;
-        case TOK_EQUAL:
-            printf("EQUAL>\n");
-            break;
-        case TOK_NOTEQUAL:
-            printf("NOTEQUAL>\n");
-            break;
-        case TOK_GREATER:
-            printf("GREATER>\n");
-            break;
-        case TOK_GREATEREQUAL:
-            printf("GREATEREQUAL>\n");
-            break;
-        default:
-            printf("%c>\n", tok.i_value);
-            break;
+            ungetc(c, in);
+            return make_integer(num);
         }
-    } while (tok.type != TOK_EOF);
-
-    //scanner_free(&scanner);
-
-    sa_print_stats(global_stack_alloc);
-    sa_free(&global_stack_alloc);
-
-    return 0;
-#endif
+        else
+        {
+            fprintf(stderr, "number not followed by delimiter\n");
+            exit(1);
+        }
+    }
+    else
+    {
+        fprintf(stderr, "bad input. Unexpected '%c'\n", c);
+        exit(1);
+    }
+    fprintf(stderr, "read illegal state\n");
+    exit(1);
 }
 
+object* eval(object* exp)
+{
+    return exp;
+}
+
+void write(object* obj)
+{
+    switch (obj->type)
+    {
+    case INTEGER:
+        printf("%ld", obj->data.integer);
+        break;
+    default:
+        fprintf(stderr, "unknown object type\n");
+        exit(1);
+    }
+}
+
+int main(int argc, char* argv[])
+{
+    while (1)
+    {
+        printf("> ");
+        write(eval(read(stdin)));
+        printf("\n");
+    }
+}
 
 void panic_exit(const char* message, char* file, int line)
 {
-    printf("panic exit in file '%s' line %i:\n%s\n", file, line, message);
-    sa_print_stats(global_stack_alloc);
-    sa_free(&global_stack_alloc);
-    exit(1);
+
 }
