@@ -14,7 +14,8 @@ typedef enum {
     FLOATING,
     BOOLEAN,
     CHARACTER,
-    STRING
+    STRING,
+    EMPTY_LIST
 } object_type;
 
 typedef struct {
@@ -28,6 +29,7 @@ typedef struct {
     } data;
 } object;
 
+object* obj_empty_list;
 object* obj_true;
 object* obj_false;
 
@@ -92,6 +94,9 @@ char is_false(object* obj)
 
 void init()
 {
+    obj_empty_list = make_object();
+    obj_empty_list->type = EMPTY_LIST;
+
     obj_true = make_object();
     obj_true->type = BOOLEAN;
     obj_true->data.boolean = 1;
@@ -273,6 +278,19 @@ object* read(FILE* in)
 
 #undef BUFFER_MAX
     }
+    else if (c == '(')
+    {
+        /* read the empty list */
+        eat_whitespace(in);
+        c = getc(in);
+        if (c == ')')
+            return obj_empty_list;
+        else
+        {
+            fprintf(stderr, "unexpected character '%c'. Expecting ')'\n", c);
+            exit(1);
+        }
+    }
     else
     {
         fprintf(stderr, "bad input. Unexpected '%c'\n", c);
@@ -300,6 +318,9 @@ void write(object* obj)
         break;
     case CHARACTER:
         printf("#'%c'", obj->data.character);
+        break;
+    case EMPTY_LIST:
+        printf("()");
         break;
     case INTEGER:
         printf("%ld", obj->data.integer);
