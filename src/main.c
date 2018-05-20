@@ -9,6 +9,8 @@
 #include "config.h"
 stack_allocator_t* global_stack_alloc;
 
+#define _exit(c) panic_exit("", __FILE__, __LINE__)
+
 typedef enum {
     INTEGER,
     FLOATING,
@@ -46,9 +48,25 @@ object* make_object()
     if (!obj)
     {
         fprintf(stderr, "out of memory\n");
-        exit(1);
+        _exit(1);
     }
     return obj;
+}
+
+void free_object(object* obj)
+{
+    if (!obj || obj == obj_empty_list || obj == obj_false || obj == obj_true)
+        return;
+    if (obj->type == PAIR)
+    {
+        free_object(obj->data.pair.car);
+        free_object(obj->data.pair.cdr);
+    }
+    else if (obj->type == STRING)
+    {
+        free(obj->data.string);
+    }
+    free(obj);
 }
 
 object* make_integer(long value)
@@ -83,7 +101,7 @@ object* make_string(char* value)
     if (!obj->data.string)
     {
         fprintf(stderr, "out of memory\n");
-        exit(1);
+        _exit(1);
     }
     strcpy(obj->data.string, value);
     return obj;
@@ -115,7 +133,7 @@ object* car(object* obj)
         return obj->data.pair.car;
     }
     fprintf(stderr, "object not a pair\n");
-    exit(1);
+    _exit(1);
 }
 
 object* cdr(object* obj)
@@ -125,7 +143,7 @@ object* cdr(object* obj)
         return obj->data.pair.cdr;
     }
     fprintf(stderr, "object not a pair\n");
-    exit(1);
+    _exit(1);
 }
 
 void init()
@@ -182,12 +200,12 @@ void peek_character_end(FILE *in)
     if (c != '\'')
     {
         fprintf(stderr, "expected ' after character literal\n");
-        exit(1);
+        _exit(1);
     }
     if (!is_delimiter(peek(in)))
     {
         fprintf(stderr, "character not followed by delimiter\n");
-        exit(1);
+        _exit(1);
     }
 }
 
@@ -199,7 +217,7 @@ object* read_character(FILE* in)
     {
     case EOF:
         fprintf(stderr, "incomplete character literal\n");
-        exit(1);
+        _exit(1);
     case '\\':
         c = getc(in);
         if (c == 'n')
@@ -208,7 +226,7 @@ object* read_character(FILE* in)
             return make_character('\n');
         }
         fprintf(stderr, "unknown escaped character literal\n");
-        exit(1);
+        _exit(1);
     }
     char val = c;
     peek_character_end(in);
@@ -240,7 +258,7 @@ object* read_pair(FILE* in)
         if (!is_delimiter(c))
         {
             fprintf(stderr, "dot not followed by delimiter\n");
-            exit(1);
+            _exit(1);
         }
         object* cdr_obj = read(in);
         eat_whitespace(in);
@@ -248,7 +266,7 @@ object* read_pair(FILE* in)
         if (c != ')')
         {
             fprintf(stderr, "where was the trailing right paren?\n");
-            exit(1);
+            _exit(1);
         }
         return cons(car_obj, cdr_obj);
     }
@@ -277,7 +295,7 @@ object* read(FILE* in)
             return read_character(in);
         default:
             fprintf(stderr, "Unknown boolean type\n");
-            exit(1);
+            _exit(1);
         }
     }
     else if (isdigit(c) || (c == '-' && isdigit(peek(in))))
@@ -316,13 +334,13 @@ object* read(FILE* in)
             else
             {
                 fprintf(stderr, "number not followed by delimiter\n");
-                exit(1);
+                _exit(1);
             }
         }
         else
         {
             fprintf(stderr, "number not followed by delimiter\n");
-            exit(1);
+            _exit(1);
         }
     }
     else if (c == '"')
@@ -342,14 +360,14 @@ object* read(FILE* in)
             if (c == EOF)
             {
                 fprintf(stderr, "unterminated string literal\n");
-                exit(1);
+                _exit(1);
             }
             if (len < BUFFER_MAX - 1)
                 buffer[len++] = c;
             else
             {
                 fprintf(stderr, "string too long. max length: %i\n", BUFFER_MAX);
-                exit(1);
+                _exit(1);
             }
         }
         buffer[len] = '\0';
@@ -364,10 +382,10 @@ object* read(FILE* in)
     else
     {
         fprintf(stderr, "bad input. Unexpected '%c'\n", c);
-        exit(1);
+        _exit(1);
     }
     fprintf(stderr, "read illegal state\n");
-    exit(1);
+    _exit(1);
 }
 
 /* EVAL */
@@ -450,7 +468,7 @@ void write(object* obj)
         break;
     default:
         fprintf(stderr, "unknown object type\n");
-        exit(1);
+        _exit(1);
     }
 }
 
@@ -461,12 +479,20 @@ int main(int argc, char* argv[])
     while (1)
     {
         printf("> ");
-        write(eval(read(stdin)));
+        object* expr = eval(read(stdin));
+        write(expr);
         printf("\n");
+        free_object(expr);
     }
 }
 
 void panic_exit(const char* message, char* file, int line)
 {
+    free(obj_empty_list);
+    free(obj_true);
+    free(obj_false);
 
+    fprintf(stderr, "exiting in file %s at line %i\n", file, line);
+
+    exit(1);
 }
