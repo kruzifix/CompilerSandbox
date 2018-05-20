@@ -61,6 +61,7 @@ object* quote_symbol;
 object* define_symbol;
 object* set_symbol;
 object* ok_symbol;
+object* if_symbol;
 object* empty_environment;
 object* global_environment;
 
@@ -347,6 +348,7 @@ void init()
     define_symbol = make_symbol("define");
     set_symbol = make_symbol("set!");
     ok_symbol = make_symbol("ok");
+    if_symbol = make_symbol("if");
 
     empty_environment = empty_list;
     global_environment = extend_environment(empty_list, empty_list, empty_environment);
@@ -677,6 +679,8 @@ object* read(FILE* in)
 
 #define cadr(obj) car(cdr(obj))
 #define caddr(obj) car(cdr(cdr(obj)))
+#define cdddr(obj) cdr(cdr(cdr(obj)))
+#define cadddr(obj) car(cdr(cdr(cdr(obj))))
 
 char is_self_evaluating(object* exp)
 {
@@ -717,9 +721,19 @@ char is_definition(object* exp)
     return is_tagged_list(exp, define_symbol);
 }
 
+char is_if(object* exp)
+{
+    return is_tagged_list(exp, if_symbol);
+}
+
 object* text_of_quotation(object* exp)
 {
     return cadr(exp);
+}
+
+object* if_alternative(object* exp)
+{
+    return cdddr(exp) == empty_list ? obj_false : cadddr(exp);
 }
 
 object* eval(object* exp, object* env);
@@ -738,6 +752,7 @@ object* eval_definition(object* exp, object* env)
 
 object* eval(object* exp, object* env)
 {
+tailcall:
     if (is_self_evaluating(exp))
         return exp;
     else if (is_variable(exp))
@@ -748,6 +763,13 @@ object* eval(object* exp, object* env)
         return eval_assignment(exp, env);
     else if (is_definition(exp))
         return eval_definition(exp, env);
+    else if (is_if(exp))
+    {
+        exp = !is_false(eval(cadr(exp), env)) ?
+            caddr(exp) :
+            if_alternative(exp);
+        goto tailcall;
+    }
     else
     {
         fprintf(stderr, "cannot eval unknown expression type\n");
